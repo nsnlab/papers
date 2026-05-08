@@ -1,0 +1,91 @@
+---
+title: "ROI Analyses Left Amygdala - Model 1 (Encode & Recall)"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+  pdf_document: default
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Amygdala")
+ROIdata <- read.csv("BOLD_LAmygdala_model1.csv")
+
+
+# Assign factors
+ROIdata$S_ID <- factor(ROIdata$S_ID)
+ROIdata$ID <- factor(ROIdata$ID)
+ROIdata$StimType <- factor(ROIdata$StimType)
+ROIdata$TaskStage <- factor(ROIdata$TaskStage)
+
+```
+
+### **Sham Condition -  left amygdala** 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# One sample t-test - Sham Encode, Left hemisphere - Table S10
+
+# BOLD = median % BOLD signal
+
+Sham_enc <- subset(ROIdata, StimType=="Sham" & TaskStage=="Encode" )
+type = "greater"
+Sham_ost <- ddply(Sham_enc, .(TaskStage), t.test.plyr, "BOLD")
+Sham_ost <- ost_FDR(Sham_ost)
+pander(Sham_ost)
+
+```
+
+### **Stim Conditions - left amygdala** - Figure S5
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Does stimulation impact BOLD activity during encode vs recall stages of the task in the left amygadala, anterior to the hippocampus?
+
+BA <- lmer(BOLD ~ StimType*TaskStage + (1|S_ID), data = ROIdata, REML = TRUE) 
+Anova(BA, test="F") 
+
+
+# Plot
+p.BA.amyg_L <- ggplot(ROIdata, aes(x = StimType, y = BOLD, fill = StimType))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-.8, 1, .4),
+                           limits=c(-.6, 1.2)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 45, face = "bold", hjust = 1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+            legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) +
+        scale_x_discrete(breaks=c("Sham","TI 1:1","TI 1:3"),
+        labels=c("Sham","TI 1:1","TI 1:3")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20), legend.position = "none") + ggtitle("") + xlab("Left Amygdala") + scale_fill_manual(values = c("#747674", "#56B4E9", "#D16103"))  + facet_grid(.~TaskStage)
+
+
+ggsave(p.BA.amyg_L,file="Figure_S5.tiff", width = 9, height = 9, dpi = 300, units = "cm", device = "tiff")
+
+p.BA.amyg_L
+
+```
+
+

@@ -1,0 +1,361 @@
+---
+title: "TI fields - subjects"
+output:
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/EFmodel")
+data <- read.csv("EFsubjects.csv")
+
+# Assign factors
+
+data$ID <- factor(data$ID)
+data$ROI <- factor(data$ROI)
+data$Region <- factor(data$Region)
+data$StimType <- factor(data$StimType)
+
+```
+
+## **EF - hippocampus & cortex ** - Table S2.1
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Calculating the average values for hippocampal and cortical regions; weighted by volume
+
+# Hip TI 1:1
+Hipp_TI <- subset(data, Region=="Hippocampus" & StimType=="TI 1:1")
+Env_mod_amp_Hipp.11 <- normalise_by_total("Median","ROI","VolBrain",Hipp_TI)
+sd_Env_mod_amp_Hipp.11 <- normalise_by_total("Std","ROI","VolBrain",Hipp_TI)
+Abs_amp_Hipp.11 <- normalise_by_total("MedianTEf","ROI","VolBrain",Hipp_TI)
+sd_Abs_amp_Hipp.11 <- normalise_by_total("StdTEf","ROI","VolBrain",Hipp_TI)
+
+# Hip TI 1:3
+Hipp_TI <- subset(data, Region=="Hippocampus" & StimType=="TI 1:3")
+Env_mod_amp_Hipp.13 <- normalise_by_total("Median","ROI","VolBrain",Hipp_TI)
+sd_Env_mod_amp_Hipp.13 <- normalise_by_total("Std","ROI","VolBrain",Hipp_TI)
+Abs_amp_Hipp.13 <- normalise_by_total("MedianTEf","ROI","VolBrain",Hipp_TI)
+sd_Abs_amp_Hipp.13 <- normalise_by_total("StdTEf","ROI","VolBrain",Hipp_TI)
+
+
+# Cortex TI 1:1
+Crtx_TI <- subset(data, Region=="Electrode" & StimType=="TI 1:1")
+Env_mod_amp_Crtx.11 <- normalise_by_total("Median","ROI","VolBrain",Crtx_TI)
+sd_Env_mod_amp_Crtx.11 <- normalise_by_total("Std","ROI","VolBrain",Crtx_TI)
+Abs_amp_Crtx.11 <- normalise_by_total("MedianTEf","ROI","VolBrain",Crtx_TI)
+sd_Abs_amp_Crtx.11 <- normalise_by_total("StdTEf","ROI","VolBrain",Crtx_TI)
+
+# Cortex TI 1:3
+Crtx_TI <- subset(data, Region=="Electrode" & StimType=="TI 1:3")
+Env_mod_amp_Crtx.13 <- normalise_by_total("Median","ROI","VolBrain",Crtx_TI)
+sd_Env_mod_amp_Crtx.13 <- normalise_by_total("Std","ROI","VolBrain",Crtx_TI)
+Abs_amp_Crtx.13 <- normalise_by_total("MedianTEf","ROI","VolBrain",Crtx_TI)
+sd_Abs_amp_Crtx.13 <- normalise_by_total("StdTEf","ROI","VolBrain",Crtx_TI)
+
+
+Region <- c("Cortex","Cortex","Cortex","Cortex","Hippocampus","Hippocampus","Hippocampus","Hippocampus")
+Stim <- c("TI 1:1", "TI 1:1", "TI 1:3", "TI 1:3","TI 1:1", "TI 1:1", "TI 1:3", "TI 1:3")
+Measure <- c("Env Mod Amp", "Abs Amp", "Env Mod Amp", "Abs Amp","Env Mod Amp", "Abs Amp", "Env Mod Amp", "Abs Amp")
+Median <- c(Env_mod_amp_Crtx.11, Abs_amp_Crtx.11, Env_mod_amp_Crtx.13, Abs_amp_Crtx.13, Env_mod_amp_Hipp.11, Abs_amp_Hipp.11, Env_mod_amp_Hipp.13, Abs_amp_Hipp.13)
+SD <-  c(sd_Env_mod_amp_Crtx.11, sd_Abs_amp_Crtx.11, sd_Env_mod_amp_Crtx.13, sd_Abs_amp_Crtx.13, sd_Env_mod_amp_Hipp.11, sd_Abs_amp_Hipp.11, sd_Env_mod_amp_Hipp.13, sd_Abs_amp_Hipp.13)
+  
+S2.1_Tot2mA <- data.frame(Stim,Measure,Region,Median,SD)
+pander(S2.1_Tot2mA)
+
+#
+S2.1_Tot4mA <- data.frame(Stim,Measure,Region,Median*2,SD*2)
+pander(S2.1_Tot4mA)
+```
+
+## **EF - hippocampus** - Figure 2C & Table S2.2
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+Hipp <- subset(data, Region=="Hippocampus")
+
+## Normalise
+Ratio_Total <- ddply(Hipp, c("ID","Ratio"), summarise,
+                     Ant_T = Median[ROI=="Ant"] / (Median[ROI=="Ant"] + Median[ROI=="Mid"] + Median[ROI=="Post"]),
+                     Mid_T = Median[ROI=="Mid"] / (Median[ROI=="Ant"] + Median[ROI=="Mid"] + Median[ROI=="Post"]),
+                     Post_T = Median[ROI=="Post"] / (Median[ROI=="Ant"] + Median[ROI=="Mid"] + Median[ROI=="Post"])
+)
+
+Ratio_long <- tidyr::gather(Ratio_Total, Regions, metric,  Ant_T:Post_T, factor_key=TRUE)
+Ratio_long$Regions <- as.factor(Ratio_long$Regions)
+
+# Add this metric to the hippocampus data subset to also use for correlations with BOLD
+ROI <- Ratio_long$Regions
+ROI <- gsub("_T", "", ROI)
+Ratio_long$ROI=ROI
+rm(ROI)
+Hipp <- merge(Hipp, Ratio_long,by=c("ID","ROI","Ratio")) 
+
+Hipp <- Hipp %>% rename(median_Region2Total = metric)
+
+
+## EF subjects per hippocampal region
+EF.values <- Hipp  %>%
+  group_by(StimType,ROI) %>%
+  summarise_at(vars(median_Region2Total), list(median = mean, std = sd))
+ 
+pander(EF.values)
+
+### Stats
+
+# --- TI 1:1 - Table S2.2
+
+TI1_1 <-  subset(Hipp, StimType=="TI 1:1")
+TI1_1.EF <- lmer(median_Region2Total ~ ROI + (1|ID), data = TI1_1, REML = TRUE)
+Anova(TI1_1.EF, test="F") 
+
+TI1_1.EF.contrasts <- emmeans(TI1_1.EF, specs = pairwise ~ ROI, type = "response")
+TI1_1.EF.contrasts
+
+
+# --- TI 1:3 - Table S2.2
+
+TI1_3 <-  subset(Hipp, StimType=="TI 1:3")
+TI1_3.EF <- lmer(median_Region2Total ~ ROI + (1|ID), data = TI1_3, REML = TRUE)
+Anova(TI1_3.EF, test="F") 
+
+TI1_3.EF.contrasts <- emmeans(TI1_3.EF, specs = pairwise ~ ROI, type = "response")
+TI1_3.EF.contrasts
+
+
+### ---- Plot -----
+
+p.ratio.TI <- ggplot(Hipp, aes(x = ROI, y = median_Region2Total, fill = ROI))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous( 
+                           breaks = seq(0, .5, .1),
+                           limits=c(0, .5)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold", hjust = 1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+            legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) +
+        scale_x_discrete(breaks=c("Ant","Mid", "Post"),
+        labels=c("Ant","Mid", "Post")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20), legend.position = "none") + ggtitle("") + scale_fill_manual(values = c("#ce4a30", "#56B4E9","#edb047")) + ylab(expression(atop("Norm. envelope", paste("modulation amplitude")))) + xlab("Hippocampus") + facet_grid(.~StimType)
+
+ggsave(p.ratio.TI ,file="Figure_2C.pdf", width = 10.5, height = 9, dpi = 300, units = "cm", device = "pdf")  
+
+
+## ----------------------------------------------------------------------
+## Calculate ratios for Absolute amplitude
+## Normalise
+Ratio_Total <- ddply(Hipp, c("ID","Ratio"), summarise,
+                     Ant_T = MedianTEf[ROI=="Ant"] / (MedianTEf[ROI=="Ant"] + MedianTEf[ROI=="Mid"] + MedianTEf[ROI=="Post"]),
+                     Mid_T = MedianTEf[ROI=="Mid"] / (MedianTEf[ROI=="Ant"] + MedianTEf[ROI=="Mid"] + MedianTEf[ROI=="Post"]),
+                     Post_T = MedianTEf[ROI=="Post"] / (MedianTEf[ROI=="Ant"] + MedianTEf[ROI=="Mid"] + MedianTEf[ROI=="Post"])
+)
+
+Ratio_long <- tidyr::gather(Ratio_Total, Regions, metric,  Ant_T:Post_T, factor_key=TRUE)
+Ratio_long$Regions <- as.factor(Ratio_long$Regions)
+
+# Add this metric to the hippocampus data subset to also use for correlations with BOLD
+ROI <- Ratio_long$Regions
+ROI <- gsub("_T", "", ROI)
+Ratio_long$ROI=ROI
+rm(ROI)
+Hipp <- merge(Hipp, Ratio_long,by=c("ID","ROI","Ratio","Regions")) 
+
+Hipp <- Hipp %>% rename(medianTEf_Region2Total = metric)
+
+
+```
+
+### BOLD - Import data and Organize it 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Here we have the %BOLD change for the contrast TI 1:1 > Sham and TI 1:3 > Sham
+# only for the participants with EF models
+BOLDdata <- read.csv("BOLD_Hipp_model1.csv")
+
+# Assign factors
+BOLDdata$ID <- factor(BOLDdata$ID)
+BOLDdata$ROI <- factor(BOLDdata$ROI)
+BOLDdata$hemisphere <- factor(BOLDdata$hemisphere)
+BOLDdata$StimType <- factor(BOLDdata$StimType)
+BOLDdata$TaskStage <- factor(BOLDdata$TaskStage)
+
+# Match contrast names from model
+BOLDdata$Stim <- NA
+BOLDdata$Stim[BOLDdata$StimType=="TI>Sham"] <- "TI 1:1"
+BOLDdata$Stim[BOLDdata$StimType=="TIst>Sham"] <- "TI 1:3"
+
+BOLDdata<- subset(BOLDdata, select = -c(StimType))
+
+BOLDdata <- BOLDdata %>% rename(
+     StimType = Stim
+    )
+
+BOLDdata$StimType <- as.factor(BOLDdata$StimType)
+
+
+## Add ratio Region to total (normalisation)
+
+Ratio_Total <- ddply(BOLDdata, c("ID","StimType"), summarise,
+                     Ant_T = BOLD[ROI=="Ant"] / (BOLD[ROI=="Ant"] + BOLD[ROI=="Mid"] + BOLD[ROI=="Post"]),
+                     Mid_T = BOLD[ROI=="Mid"] / (BOLD[ROI=="Ant"] + BOLD[ROI=="Mid"] + BOLD[ROI=="Post"]),
+                     Post_T = BOLD[ROI=="Post"] / (BOLD[ROI=="Ant"] + BOLD[ROI=="Mid"] + BOLD[ROI=="Post"]))
+
+Ratio_long <- tidyr::gather(Ratio_Total, Regions, metric,  Ant_T:Post_T, factor_key=TRUE)
+Ratio_long$Regions <- as.factor(Ratio_long$Regions)
+
+# Add this metric to the hippocampus data subset to also use for correlations with BOLD
+ROI <- Ratio_long$Regions
+ROI <- gsub("_T", "", ROI)
+Ratio_long$ROI=ROI
+rm(ROI)
+Hipp <- merge(Hipp, Ratio_long,by=c("ID","ROI","StimType","Regions")) 
+
+Hipp <- Hipp %>% rename(BOLD_Region2Total = metric)
+
+```
+
+## **Calculate Correlations between BOLD and TI EF**  
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(data.table)
+
+## -- Hippocampal data ---
+# Correlations - are the changes in BOLD in TI 1:3 related to the fields?
+# median_Region2Total = Normalised envelope modulation amplitude
+TI13 <- subset(Hipp, StimType=="TI 1:3")
+ddply(TI13, .(ROI), corrgroup, "BOLD_Region2Total", "median_Region2Total")
+
+# Yes
+
+# Could this also be explained by the absolute amplitude of the field?
+# medianTEf_Region2Total = Normalised absolute amplitude
+ddply(TI13, .(ROI), corrgroup, "BOLD_Region2Total", "medianTEf_Region2Total")
+
+# No
+
+
+## Also checking if correlations exist for TI 1:1
+TI11 <- subset(Hipp, StimType=="TI 1:1")
+ddply(TI11, .(ROI), corrgroup, "BOLD_Region2Total", "median_Region2Total")
+ddply(TI11, .(ROI), corrgroup, "BOLD_Region2Total", "medianTEf_Region2Total")
+
+
+## -- Could the changes in BOLD in the hippocampus during TI 1:3 be explained by the field's absolute amplitude in the cortex?
+
+CorrAntHipp <- subset(Hipp, ROI=="Ant" & StimType=="TI 1:3")
+CorrAntHipp <- CorrAntHipp %>% dplyr::select(ID, BOLD_Region2Total, median_Region2Total, medianTEf_Region2Total)
+
+CortexTEf <- subset(data, Region=="Electrode" & StimType=="TI 1:3")
+Cortex.Ant <- CortexTEf$MedianTEf[CortexTEf$ROI=="Ant"]
+Cortex.Mid <- CortexTEf$MedianTEf[CortexTEf$ROI=="Mid"]
+Cortex.Post <- CortexTEf$MedianTEf[CortexTEf$ROI=="Post"]
+
+CorrAntHipp$Cortex.Ant <- Cortex.Ant
+CorrAntHipp$Cortex.Mid <- Cortex.Mid
+CorrAntHipp$Cortex.Post <- Cortex.Post
+corr.test(CorrAntHipp$BOLD_Region2Total, CorrAntHipp$Cortex.Ant)
+corr.test(CorrAntHipp$BOLD_Region2Total, CorrAntHipp$Cortex.Mid)
+corr.test(CorrAntHipp$BOLD_Region2Total, CorrAntHipp$Cortex.Post)
+
+
+
+```
+
+## **Plot Correlations between BOLD and TI EF** - Figure S7
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Stim Type = TI 1:3
+# -- Ant Hippocampus BOLD
+vars = c("median_Region2Total", "medianTEf_Region2Total","Cortex.Ant", "Cortex.Mid", "Cortex.Post")
+xname = c(expr(bold(atop("Norm. envelope modulation", paste("amplitude - Ant Hipp")))), expr(bold(atop("Norm. absolute", paste("amplitude - Ant Hipp")))), expr(bold(atop("Absolute amplitude", paste("Ant Cortex ROI")))), expr(bold(atop("Absolute amplitude", paste("Mid Cortex ROI")))), expr(bold(atop("Absolute amplitude", paste("Post Cortex ROI")))))
+resp = tibble(vars, xname)
+
+library(purrr)
+allplots = pmap(resp, ~scatter_fun2(x = .x, y = "BOLD_Region2Total", ROIy = "Ant", xname = .y, -0.5, 1.8, CorrAntHipp))
+
+all_corr_AntBOLD <- grid.arrange(allplots[[1]], allplots[[2]], allplots[[3]], allplots[[4]], allplots[[5]], ncol=5, nrow=1)
+
+
+```
+
+## **Plot Correlations between BOLD and TI EF** - Figure S7
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Stim Type = TI 1:3
+# -- Ant Hippocampus BOLD
+
+vars = c("median_Region2Total", "medianTEf_Region2Total","Cortex.Ant", "Cortex.Mid", "Cortex.Post")
+xname = c(expr(bold(atop("Norm. envelope modulation", paste("amplitude - Ant Hipp")))), expr(bold(atop("Norm. absolute", paste("amplitude - Ant Hipp")))), expr(bold(atop("Absolute amplitude", paste("Ant Cortex ROI")))), expr(bold(atop("Absolute amplitude", paste("Mid Cortex ROI")))), expr(bold(atop("Absolute amplitude", paste("Post Cortex ROI")))))
+resp = tibble(vars, xname)
+
+
+library(WRS2)
+allplots = pmap(resp, ~scatter_fun3(x = .x, y = "BOLD_Region2Total", ROIy = "Ant", xname = .y, -0.5, 1.8, CorrAntHipp))
+
+all_corr_AntBOLD <- grid.arrange(allplots[[1]], allplots[[2]], allplots[[3]], allplots[[4]], allplots[[5]], ncol=5, nrow=1)
+
+ggsave(all_corr_AntBOLD ,file="Figure_S7A.pdf", width = 45, height = 8, dpi = 300, units = "cm", device = "pdf")  
+
+# -- Mid Hippocampus BOLD
+
+CorrMidHipp <- subset(Hipp, ROI=="Mid" & StimType=="TI 1:3")
+CorrMidHipp <- CorrMidHipp %>% dplyr::select(ID, BOLD_Region2Total, median_Region2Total, medianTEf_Region2Total)
+
+CorrMidHipp$Cortex.Ant <- Cortex.Ant
+CorrMidHipp$Cortex.Mid <- Cortex.Mid
+CorrMidHipp$Cortex.Post <- Cortex.Post
+
+
+vars = c("median_Region2Total", "medianTEf_Region2Total","Cortex.Ant", "Cortex.Mid", "Cortex.Post")
+xname = c(expr(bold(atop("Norm. envelope modulation", paste("amplitude - Mid Hipp")))), expr(bold(atop("Norm. absolute", paste("amplitude - Mid Hipp")))), expr(bold(atop("Absolute amplitude", paste("Ant Cortex ROI")))), expr(bold(atop("Absolute amplitude", paste("Mid Cortex ROI")))), expr(bold(atop("Absolute amplitude", paste("Post Cortex ROI")))))
+resp = tibble(vars, xname)
+
+allplots = pmap(resp, ~scatter_fun3(x = .x, y = "BOLD_Region2Total", ROIy = "Mid", xname = .y, 0, 0.8, CorrMidHipp))
+
+all_corr_MidBOLD <- grid.arrange(allplots[[1]], allplots[[2]], allplots[[3]], allplots[[4]], allplots[[5]], ncol=5, nrow=1)
+
+ggsave(all_corr_MidBOLD ,file="Figure_S7B.pdf", width = 45, height = 8, dpi = 300, units = "cm", device = "pdf")  
+
+
+
+# -- Post Hippocampus BOLD
+
+CorrPostHipp <- subset(Hipp, ROI=="Post" & StimType=="TI 1:3")
+CorrPostHipp <- CorrPostHipp %>% dplyr::select(ID, BOLD_Region2Total, median_Region2Total, medianTEf_Region2Total)
+
+CorrPostHipp$Cortex.Ant <- Cortex.Ant
+CorrPostHipp$Cortex.Mid <- Cortex.Mid
+CorrPostHipp$Cortex.Post <- Cortex.Post
+
+
+vars = c("median_Region2Total", "medianTEf_Region2Total","Cortex.Ant", "Cortex.Mid", "Cortex.Post")
+xname = c(expr(bold(atop("Norm. envelope modulation", paste("amplitude - Post Hipp")))), expr(bold(atop("Norm. absolute", paste("amplitude - Post Hipp")))), expr(bold(atop("Absolute amplitude", paste("Ant Cortex ROI")))), expr(bold(atop("Absolute amplitude", paste("Mid Cortex ROI")))), expr(bold(atop("Absolute amplitude", paste("Post Cortex ROI")))))
+resp = tibble(vars, xname)
+
+allplots = pmap(resp, ~scatter_fun3(x = .x, y = "BOLD_Region2Total", ROIy = "Post", xname = .y, -0.6, 1, CorrPostHipp))
+
+all_corr_PostBOLD <- grid.arrange(allplots[[1]], allplots[[2]], allplots[[3]], allplots[[4]], allplots[[5]], ncol=5, nrow=1)
+
+ggsave(all_corr_PostBOLD ,file="Figure_S7C.pdf", width = 45, height = 8, dpi = 300, units = "cm", device = "pdf")  
+```

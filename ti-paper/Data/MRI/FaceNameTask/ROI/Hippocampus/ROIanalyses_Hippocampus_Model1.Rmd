@@ -1,0 +1,280 @@
+---
+title: "ROI Analyses Hippocampus - Model 1 (Encode & Recall)"
+output:
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Hippocampus")
+ROIdata <- read.csv("BOLD_Hipp_model1.csv")
+
+# Assign factors
+ROIdata$S_ID <- factor(ROIdata$S_ID)
+ROIdata$ID <- factor(ROIdata$ID)
+ROIdata$ROI <- factor(ROIdata$ROI)
+ROIdata$hemisphere <- factor(ROIdata$hemisphere)
+ROIdata$StimType <- factor(ROIdata$StimType)
+ROIdata$TaskStage <- factor(ROIdata$TaskStage)
+
+```
+
+
+### **Sham Condition - Hippocampus** - Figure 2F
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Does the hippocampus show different activity between encode and recall stages of the task?
+# BOLD = median % BOLD signal
+
+Hip_data_Sham <- subset(ROIdata, ROI=="Hippocampus" & StimType=="Sham")
+
+# One sample t-test 
+upper = 0.3
+type = "two.sided"
+Sham_ost <- ddply(Hip_data_Sham, .(TaskStage, hemisphere), t.test.plyr, "BOLD")
+Sham_ost <- ost_FDR(Sham_ost)
+pander(Sham_ost)
+
+# LMM - effect of task stage and hemishere on BOLD signal
+BA <- lmer(BOLD ~ TaskStage*hemisphere + (1|S_ID), data = Hip_data_Sham, REML = TRUE) 
+Anova(BA, test="F") 
+summary(BA, ddf ="Kenward-Roger")
+
+
+estimated_means <- emmeans(BA, ~ TaskStage*hemisphere)
+estimated_means
+
+
+# Plot
+p.Sham_hipp <-ggplot(Hip_data_Sham, aes(x = hemisphere, y = BOLD, fill=hemisphere)) + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', fill="#56B4E9", stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-.8, .8, .4),
+                           limits=c(-1, 1)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        panel.background = element_blank()) + 
+        theme(legend.title=element_blank(), legend.position="none") +
+        scale_colour_manual(values=c("#999999", "#999999"))+
+        scale_fill_manual(values=c("#999999", "#999999"))  +
+        scale_x_discrete(breaks=c("L","R"),
+        labels=c("L", "R")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20), legend.position = "none") + ggtitle("") + xlab("Hippocampus") + facet_grid(.~TaskStage)
+
+
+ggsave(p.Sham_hipp ,file="Figure_2F.pdf", width = 9, height = 9, dpi = 300, units = "cm", device = "pdf")   
+
+p.Sham_hipp
+
+```
+
+
+### **Sham Condition - segmented Hippocampus** - Figure 2G
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+## Does the left hippocampus shows different activity during encode across hippocampal regions (anterior, mid, posterior)?
+
+Left_Seg_Hip_data_Sham <- subset(ROIdata, (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & StimType=="Sham" & hemisphere=="L" & TaskStage=="Encode")
+BA_seg <- lmer(BOLD ~ ROI + (1|S_ID), data = Left_Seg_Hip_data_Sham, REML = TRUE)
+Anova(BA_seg, test="F") 
+summary(BA_seg, ddf ="Kenward-Roger")
+
+BA_contrasts <- emmeans(BA_seg, specs = pairwise ~ ROI, type = "response")
+BA_contrasts
+
+
+
+# Create plot 
+p.BA_LHipp_Sham <- ggplot(Left_Seg_Hip_data_Sham, aes(x = ROI, y = BOLD, fill = ROI))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', fill="#56B4E9", stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-.8, 1, .4),
+                           limits=c(-.4, 1.2)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(),
+        panel.background = element_blank()) +
+        scale_x_discrete(breaks=c("Ant","Mid", "Post"),
+        labels=c("Ant","Mid", "Post")) +
+        scale_fill_manual(values=c("#ce4a30", "#56B4E9","#edb047")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + xlab("Left Hippocampus")
+
+
+
+ggsave(p.BA_LHipp_Sham ,file="Figure_2G.pdf", width = 7, height = 8, dpi = 300, units = "cm", device = "pdf")
+p.BA_LHipp_Sham
+
+## What about the right hippocampus?
+Right_Seg_Hip_data_Sham <- subset(ROIdata, (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & StimType=="Sham" & hemisphere=="R" & TaskStage=="Encode")
+BA_seg <- lmer(BOLD ~ ROI + (1|S_ID), data = Right_Seg_Hip_data_Sham, REML = TRUE)
+Anova(BA_seg, test="F") 
+
+# no ROI effect for the right hippocampus
+
+```
+
+### **Stim Conditions - whole Hippocampus** - Figures 3B and 3G
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Does stimulation impact BOLD activity in the targeted hippocampus - Left ?
+
+Hip_data_L<- subset(ROIdata, ROI=="Hippocampus" & hemisphere=="L")
+BA <- lmer(BOLD ~ StimType*TaskStage + (1|S_ID), data = Hip_data_L, REML = TRUE)
+Anova(BA, test="F") 
+summary(BA, ddf ="Kenward-Roger")
+
+BA_contrasts <- emmeans(BA, specs = pairwise ~ StimType|TaskStage, type = "response")
+BA_contrasts
+
+
+## Plot - Figure 2K
+
+p.BA.hipp_L <- ggplot(Hip_data_L, aes(x = StimType, y = BOLD, fill = StimType))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-.8, 1, .4),
+                           limits=c(-.6, 1.2)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 45, face = "bold", hjust = 1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+            legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) +
+        scale_x_discrete(breaks=c("Sham","TI 1:1","TI 1:3"),
+        labels=c("Sham","TI 1:1","TI 1:3")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20), legend.position = "none") + ggtitle("") + xlab("Left Hippocampus") + scale_fill_manual(values = c("#747674", "#56B4E9", "#D16103"))  + facet_grid(.~TaskStage)
+
+
+ggsave(p.BA.hipp_L,file="Figure_3B.pdf", width = 9, height = 9, dpi = 300, units = "cm", device = "pdf")
+
+
+p.BA.hipp_L
+
+# What about the right hippocampus, not targeted?
+
+Hip_data_R<- subset(ROIdata, ROI=="Hippocampus" & hemisphere=="R")
+BA <- lmer(BOLD ~ StimType*TaskStage + (1|S_ID), data = Hip_data_R, REML = TRUE)
+Anova(BA, test="F") 
+summary(BA, ddf ="Kenward-Roger")
+
+BA_contrasts <- emmeans(BA, specs = pairwise ~ StimType|TaskStage, type = "response")
+BA_contrasts
+
+## Plot - Figure 4L
+p.BA.hipp_R <- ggplot(Hip_data_R, aes(x = StimType, y = BOLD, fill = StimType))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-.8, 1, .4),
+                           limits=c(-.6, 1.2)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 45, face = "bold", hjust = 1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+            legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) +
+        scale_x_discrete(breaks=c("Sham","TI 1:1","TI 1:3"),
+        labels=c("Sham","TI 1:1","TI 1:3")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20), legend.position = "none") + ggtitle("") + xlab("Right Hippocampus") + scale_fill_manual(values = c("#747674", "#56B4E9", "#D16103"))  + facet_grid(.~TaskStage)
+
+
+
+ggsave(p.BA.hipp_R,file="Figure_3G.pdf", width = 9, height = 9, dpi = 300, units = "cm", device = "pdf")
+
+p.BA.hipp_R
+```
+
+### **Stim Conditions - segmented Left Hippocampus** - Figure 3C
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Effect of stimulation was seen only for the left hippocampus - Does it affect segments of the hippocampus differently?
+
+Seg_Hip_data_enc_L <- subset(ROIdata, (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & TaskStage=="Encode" &  hemisphere=="L")
+BA_seg <- lmer(BOLD ~ StimType*ROI + (1|S_ID), data = Seg_Hip_data_enc_L, REML = TRUE)
+Anova(BA_seg, test="F") 
+summary(BA_seg, ddf ="Kenward-Roger")
+
+##
+##
+emmip(BA_seg, StimType~ROI)
+estimated_means <- emmeans(BA_seg, ~ StimType*ROI)
+
+
+# Plot
+p.BA_seg_enc.L <- ggplot(Seg_Hip_data_enc_L, aes(x = ROI, y = BOLD, fill = StimType)) +
+       stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-.8, 1, .4),
+                           limits=c(-.8, 1.2)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold", hjust = 1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank())  + 
+        scale_x_discrete(breaks=c("Ant","Mid", "Post"),
+        labels=c("Ant","Mid", "Post")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20),
+          legend.text = element_text(size=14),
+          legend.key.size = unit(0.5, 'cm')) + ggtitle("") + xlab("Left Hippocampus")  + scale_fill_manual(values = c("#747674", "#56B4E9", "#D16103"), name = "", labels = c("Sham", "TI 1:1", "TI 1:3"))
+
+ggsave(p.BA_seg_enc.L,file="Figure_3C.pdf", width = 10, height = 9, dpi = 300, units = "cm", device = "pdf")
+
+p.BA_seg_enc.L
+```
+
+

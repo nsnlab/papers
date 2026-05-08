@@ -1,0 +1,214 @@
+---
+title: "ROI Analyses Hippocampus - Model 2 (Correct and Incorrect associations)"
+output:
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+```
+
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Hippocampus")
+ROIdata <- read.csv("BOLD_Hipp_model2.csv")
+
+# Assign factors
+ROIdata$S_ID <- factor(ROIdata$S_ID)
+ROIdata$ID <- factor(ROIdata$ID)
+ROIdata$ROI <- factor(ROIdata$ROI)
+ROIdata$hemisphere <- factor(ROIdata$hemisphere)
+ROIdata$StimType <- factor(ROIdata$StimType)
+ROIdata$TaskStage <- factor(ROIdata$TaskStage)
+ROIdata$Response <- factor(ROIdata$Response)
+```
+
+
+### **Sham Condition - segmented Hippocampus** - Table S8 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# LMM model comparing correct vs incorrect estimates for segmented hippocampus during the Sham condition - Encode stage of the task
+# BOLD = median % BOLD signal
+
+## -- left hippocampus
+
+Hip_data_seg_enc <- subset(ROIdata, StimType=="Sham" & (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response!="C>I" & TaskStage=="Encode" & hemisphere=="L")
+
+Hipp_seg_Sham <- lmer(BOLD ~ Response*ROI + (1|ID), data = Hip_data_seg_enc)
+Anova(Hipp_seg_Sham, test="F") 
+summary(Hipp_seg_Sham, ddf ="Kenward-Roger")
+emmip(Hipp_seg_Sham, Response~ROI)
+
+estimated_means <- get_means(Hipp_seg_Sham, "Response*ROI")
+pander(estimated_means)
+
+Hipp_contrasts <- emmeans(Hipp_seg_Sham, specs = pairwise ~ Response|ROI, type = "response")
+Hipp_contrasts
+
+
+## -- right hippocampus
+
+Hip_data_seg_enc <- subset(ROIdata, StimType=="Sham" & (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response!="C>I" & TaskStage=="Encode" & hemisphere=="R")
+
+Hipp_seg_Sham <- lmer(BOLD ~ Response*ROI + (1|ID), data = Hip_data_seg_enc)
+Anova(Hipp_seg_Sham, test="F") 
+
+
+
+## Plot
+
+Hip_data_seg_enc <-  subset(ROIdata, StimType=="Sham" & (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response!="C>I" & TaskStage=="Encode" & hemisphere=="L")
+
+g.Hip_data_seg_enc <- Hip_data_seg_enc %>% group_by(StimType, Response, ID) %>%
+  summarise(BOLD = mean(BOLD)) 
+
+p.Hipp_seg_Sham <- ggplot(g.Hip_data_seg_enc, aes(x = Response, y = BOLD, fill = Response))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-.8, 1, .4),
+                           limits=c(-.6, 1.2)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+                      axis.text.x = element_text(color = "grey20", size = 14, angle = 45, face = "bold", hjust = 1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(),
+        panel.background = element_blank()) +
+        scale_x_discrete(breaks=c("Correct", "Incorrect"),
+        labels=c("Correct","Incorrect")) +
+        scale_fill_manual(values=c("#61ba82", "#999999")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none")  + xlab("Left Hippocampus")
+
+p.Hipp_seg_Sham
+#ggsave(p.Hipp_seg_Sham ,file="Figure_2H.pdf", width = 6, height = 9, dpi = 300, units = "cm", device = "pdf")
+
+```
+
+### **Stim Conditions - segmented Left Hippocampus** - Table S11 and Figure 2O
+```{r}
+
+## Left Hippocampus - TI 1:3 condition - Table S11.1
+## LMM model comparing correct vs incorrect estimates
+
+TI1_3_Hip_data_seg_enc <- subset(ROIdata,  (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response!="C>I" & TaskStage=="Encode" & hemisphere=="L" & StimType=="TI 1:3")
+
+BA_seg <- lmer(BOLD ~ Response*ROI + (1|ID), data = TI1_3_Hip_data_seg_enc)
+Anova(BA_seg, test="F") 
+#emmip(BA_seg, ROI~Response)
+estimated_means <- get_means(BA_seg, "Response*ROI")
+pander(estimated_means)
+
+## Left Hippocampus - TI 1:1 condition - Table S12.2
+TI1_1_Hip_data_seg_enc <- subset(ROIdata,  (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response!="C>I" & TaskStage=="Encode" & hemisphere=="L" & StimType=="TI 1:1")
+
+
+BA_seg <- lmer(BOLD ~ Response*ROI + (1|ID), data = TI1_1_Hip_data_seg_enc)
+Anova(BA_seg, test="F") 
+#emmip(BA_seg, ROI~Response)
+estimated_means <- get_means(BA_seg, "Response*ROI")
+pander(estimated_means)
+
+
+# Ploting average for simpler figure
+Hip_data_enc <-  subset(ROIdata, Response!="C>I" & TaskStage=="Encode" & hemisphere=="L" & ROI!="Hippocampus")
+g.Hip_data_enc <-Hip_data_enc  %>% group_by(StimType, Response, ID) %>%
+  summarise(BOLD = mean(BOLD)) 
+
+p.Hipp <- ggplot(g.Hip_data_enc, aes(x = StimType, y = BOLD, fill = Response))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-.8, 1, .4),
+                           limits=c(-.6, 1.2)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 45, face = "bold", hjust = 1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(),
+        panel.background = element_blank()) +
+        scale_fill_manual(values=c("#61ba82", "#999999")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14),  legend.text = element_text(size=14),
+          legend.key.size = unit(0.5, 'cm'))  + xlab("Left Hippocampus") 
+
+p.Hipp
+ggsave(p.Hipp ,file="Figure_3e.pdf", width = 10, height = 8, dpi = 300, units = "cm", device = "pdf")
+
+
+#
+```
+
+
+### **Stim Conditions - segmented Left Hippocampus - Recall** 
+```{r}
+
+## Left Hippocampus - Sham condition - 
+Sham_Hip_data_seg_enc <- subset(ROIdata,  (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response!="C>I" & TaskStage=="Recall" & hemisphere=="L" & StimType=="Sham")
+
+BA_seg <- lmer(BOLD ~ Response*ROI + (1|ID), data = Sham_Hip_data_seg_enc)
+Anova(BA_seg, test="F") 
+emmip(BA_seg, ROI~Response)
+estimated_means <- get_means(BA_seg, "Response*ROI")
+pander(estimated_means)
+
+## Left Hippocampus - TI 1:3 condition - 
+## LMM model comparing correct vs incorrect estimates
+
+TI1_3_Hip_data_seg_enc <- subset(ROIdata,  (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response!="C>I" & TaskStage=="Recall" & hemisphere=="L" & StimType=="TI 1:3")
+
+BA_seg <- lmer(BOLD ~ Response*ROI + (1|ID), data = TI1_3_Hip_data_seg_enc)
+Anova(BA_seg, test="F") 
+emmip(BA_seg, ROI~Response)
+estimated_means <- get_means(BA_seg, "Response*ROI")
+pander(estimated_means)
+
+## Left Hippocampus - TI 1:1 condition - Table S12.2
+TI1_1_Hip_data_seg_enc <- subset(ROIdata,  (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response!="C>I" & TaskStage=="Recall" & hemisphere=="L" & StimType=="TI 1:1")
+
+
+BA_seg <- lmer(BOLD ~ Response*ROI + (1|ID), data = TI1_1_Hip_data_seg_enc)
+Anova(BA_seg, test="F") 
+emmip(BA_seg, ROI~Response)
+estimated_means <- get_means(BA_seg, "Response*ROI")
+pander(estimated_means)
+
+
+## Compare correct responses across stimulation conditions
+CorrectRecall <- subset(ROIdata,  (ROI=="Hippocampus") & Response=="C>I" & TaskStage=="Recall" & hemisphere=="L")
+
+BA_seg <- lmer(BOLD ~ StimType + (1|ID), data = CorrectRecall)
+Anova(BA_seg, test="F") 
+
+
+CorrectRecall <- subset(ROIdata,  (ROI=="Ant" | ROI=="Mid" | ROI=="Post") & Response=="C>I" & TaskStage=="Encode" & hemisphere=="L")
+
+BA_seg <- lmer(BOLD ~ StimType*ROI + (1|ID), data = CorrectRecall)
+Anova(BA_seg, test="F") 
+emmip(BA_seg, StimType~ROI)
+estimated_means <- get_means(BA_seg, "StimType*ROI")
+
+```

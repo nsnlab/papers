@@ -1,0 +1,431 @@
+---
+title: "Data analysis - Cadaver Measurements"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+  pdf_document: default
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear envirnonment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data and Organize it
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Cadaver")
+data <- read.csv("ElectrodeData.csv")
+
+# add cortical (contacts 15 - 9) and hipp (contacts 8 - 1) regions 
+data$contact <- as.numeric(data$contact)
+data$region[data$contact>8] <- "Cortex"
+data$region[data$contact<9] <- "Hipp"
+
+# Assign factors
+
+data$StimType <- factor(data$StimType)
+data$elect <- factor(data$elect)
+data$type <- factor(data$type)
+data$region <- factor(data$region)
+
+
+data <- data %>% rename(depth = distance)
+
+
+Plane_elec <- data
+
+Plane_elec$distance[Plane_elec$elect=="a"] <- 0.5  ## anterior electrode
+Plane_elec$distance[Plane_elec$elect=="b"] <- 1.5  # mid electrode
+Plane_elec$distance[Plane_elec$elect=="c"] <- 2 # posterior electrode
+
+
+```
+
+
+### Plot data - Figure S2
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+## Map plots
+TI <- subset(Plane_elec, StimType=="TI")
+
+# ---- TI 1:1 - Figure1Gi
+amp_interp_depth <- tidyr::crossing(
+  tibble(distance = unique(TI$distance)),
+  tibble(depth = seq(12, 61, length.out = 100))
+) %>%
+  group_by(distance) %>%
+  mutate(mv_env_amp_norm = estimate_amp_by_distance(TI,distance[1], depth))
+
+
+amp_raster <- tidyr::crossing(
+  tibble(distance = seq(0.5,2, by = .01)),
+  tibble(depth = unique(amp_interp_depth$depth))
+) %>%
+  group_by(depth) %>%
+  mutate(amp = estimate_amp_by_depth(depth[1], distance))
+
+
+p.amp_TI <- ggplot(amp_raster, aes(depth, distance, fill = amp)) +
+  geom_raster() +
+  scale_y_reverse() +
+  scale_fill_gradient2(
+    midpoint = 0.5, 
+    high = scales::muted("red"), 
+    low = scales::muted("blue")
+  ) +
+  coord_cartesian(expand = FALSE) +theme(
+  axis.text.y = element_blank(),
+  axis.ticks = element_blank()) + easy_remove_y_axis()
+
+p.amp_TI
+
+ggsave(p.amp_TI ,file="Figure_S2i.pdf", width = 10, height = 5, dpi = 300, units = "cm", device = "pdf")  
+
+####
+
+# ---- HF 1:1 - Figure1Gii
+amp_interp_depth <- tidyr::crossing(
+  tibble(distance = unique(TI$distance)),
+  tibble(depth = seq(12, 61, length.out = 100))
+) %>%
+  group_by(distance) %>%
+  mutate(mv_env_max_norm = HF_estimate_amp_by_distance(TI,distance[1], depth))
+
+
+amp_raster <- tidyr::crossing(
+  tibble(distance = seq(0.5,2, by = .01)),
+  tibble(depth = unique(amp_interp_depth$depth))
+) %>%
+  group_by(depth) %>%
+  mutate(amp = HF_estimate_amp_by_depth(depth[1], distance))
+
+
+p.HF_amp <- ggplot(amp_raster, aes(depth, distance, fill = amp)) +
+  geom_raster() +
+  scale_y_reverse() +
+  scale_fill_gradient2(
+    midpoint = 0.5, 
+    high = scales::muted("red"), 
+    low = scales::muted("blue")
+  ) +
+  coord_cartesian(expand = FALSE) +theme(
+  axis.text.y = element_blank(),
+  axis.ticks = element_blank()) + easy_remove_y_axis()
+
+p.HF_amp
+ggsave(p.HF_amp ,file="Figure_S2ii.pdf", width = 10, height = 5, dpi = 300, units = "cm", device = "pdf")  
+
+
+# ---- LF (tACS 5 Hz) - Figure S1iii
+LF <-  subset(Plane_elec, StimType=="LF")
+amp_interp_depth <- tidyr::crossing(
+  tibble(distance = unique(LF$distance)),
+  tibble(depth = seq(12, 61, length.out = 100))
+) %>%
+  group_by(distance) %>%
+  mutate(mv_env_max_norm = HF_estimate_amp_by_distance(LF,distance[1], depth))
+
+
+amp_raster <- tidyr::crossing(
+  tibble(distance = seq(0.5,2, by = .01)),
+  tibble(depth = unique(amp_interp_depth$depth))
+) %>%
+  group_by(depth) %>%
+  mutate(amp = HF_estimate_amp_by_depth(depth[1], distance))
+
+
+p.LF_amp <- ggplot(amp_raster, aes(depth, distance, fill = amp)) +
+  geom_raster() +
+  scale_y_reverse() +
+  scale_fill_gradient2(
+    midpoint = 0.5, 
+    high = scales::muted("red"), 
+    low = scales::muted("blue")
+  ) +
+  coord_cartesian(expand = FALSE) +theme(
+  axis.text.y = element_blank(),
+  axis.ticks = element_blank()) + easy_remove_y_axis()
+
+p.LF_amp
+
+ggsave(p.LF_amp ,file="Figure_S2iii.pdf", width = 10, height = 5, dpi = 300, units = "cm", device = "pdf") 
+
+```
+
+
+### Plot data - Figure 1G
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+Plane_elec_TI <-subset(Plane_elec, StimType=="TI")
+
+
+g.Plane_elec_region <- ddply(Plane_elec_TI, c("region","elect"), summarise,
+                   HF_mean = mean(env_max),
+                   HF_median = median(env_max),
+                   HF_sd = sd(env_max),
+                   HF_se = se(env_max),
+                   TI_mean = mean(env_amp),
+                   TI_median = median(env_amp),
+                   TI_sd = sd(env_amp),
+                   TI_se = se(env_amp),
+                   d1_TI = mean(d1_env_amp),
+                   d1_HF = mean(d1_env_max)
+                   )
+
+
+# Averages for plotting
+g.Plane_elec <- ddply(Plane_elec_TI, c("region"), summarise,
+                   HF_mean = mean(env_max),
+                   HF_median = median(env_max),
+                   HF_sd = sd(env_max),
+                   HF_se = se(env_max),
+                   TI_mean = mean(env_amp),
+                   TI_median = median(env_amp),
+                   TI_sd = sd(env_amp),
+                   TI_se = se(env_amp),
+                   d1_TI = mean(d1_env_amp),
+                   d1_HF = mean(d1_env_max)
+                   )
+
+p.TI.elect_region <- ggplot(g.Plane_elec, aes(x = region, y = TI_median*10^-3)) +
+       geom_bar(stat="identity", fill=c("#3b37a3", "#de437e")) + 
+  geom_errorbar(aes(ymin=(TI_median-TI_sd)*10^-3, ymax=(TI_median+TI_sd)*10^-3), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(-0.1, 2)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Envelope modulation", paste("amplitude (mV)")))) + xlab("")
+
+
+
+p.HF.elect_region <- ggplot(g.Plane_elec, aes(x = region, y = HF_median*10^-3)) +
+       geom_bar(stat="identity", fill=c("#3b37a3", "#de437e")) + 
+  geom_errorbar(aes(ymin=(HF_median-HF_sd)*10^-3, ymax=(HF_median+HF_sd)*10^-3), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(-0.1, 6.5)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Absolute", paste("amplitude (mV)")))) + xlab("")
+
+ROI <- grid.arrange(p.TI.elect_region, p.HF.elect_region, nrow=1, ncol=2)
+
+
+
+### Normalise to hippocampus
+
+norm <- ddply(g.Plane_elec, c("region"), summarise,
+                     TI_norm = (TI_median)/(g.Plane_elec$TI_median[g.Plane_elec$region=="Hipp"])*100,
+              TI_SDnorm = (TI_sd)/(g.Plane_elec$TI_median[g.Plane_elec$region=="Hipp"])*100,
+              HF_norm = (HF_median)/(g.Plane_elec$HF_median[g.Plane_elec$region=="Hipp"])*100,
+              HF_SDnorm = (HF_sd)/(g.Plane_elec$HF_median[g.Plane_elec$region=="Hipp"])*100
+              )
+
+
+p.TI.elect_region_norm <- ggplot(norm, aes(x = region, y = TI_norm)) +
+       geom_bar(stat="identity", fill=c("#3b37a3", "#de437e")) + 
+  geom_errorbar(aes(ymin=(TI_norm-TI_SDnorm), ymax=(TI_norm+TI_SDnorm)), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(-10, 200)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Norm. envelope", paste("modulation amplitude (%)")))) + xlab("")
+
+
+
+p.HF.elect_region_norm <- ggplot(norm, aes(x = region, y = HF_norm)) +
+       geom_bar(stat="identity", fill=c("#3b37a3", "#de437e")) + 
+  geom_errorbar(aes(ymin=(HF_norm-HF_SDnorm), ymax=(HF_norm+HF_SDnorm)), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(-10, 200)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Norm. absolute", paste("amplitude (%)")))) + xlab("")
+
+ROI_norm <- grid.arrange(p.TI.elect_region_norm, p.HF.elect_region_norm, nrow=1, ncol=2)
+
+#ggsave(ROI_norm, file="Figure_1H.tiff", width = 12, height = 8, dpi = 300, units = "cm", device = "tiff") 
+
+
+# ----------- Plots with electrode info -- each time the dots will be generated in a different location around the x axis (jitter function)
+
+g.norm.Plane_elec_region <- g.Plane_elec_region %>%
+   mutate(TI_mean_norm = (TI_mean /g.Plane_elec$TI_mean[g.Plane_elec$region=="Hipp"])*100,
+          TI_median_norm = (TI_median / g.Plane_elec$TI_median[g.Plane_elec$region=="Hipp"])*100,
+          TI_sd_norm = (TI_sd / g.Plane_elec$TI_median[g.Plane_elec$region=="Hipp"])*100,
+          HF_mean_norm = (HF_mean /g.Plane_elec$HF_mean[g.Plane_elec$region=="Hipp"])*100,
+          HF_median_norm = (HF_median / g.Plane_elec$HF_median[g.Plane_elec$region=="Hipp"])*100,
+          HF_sd_norm = (HF_sd / g.Plane_elec$HF_median[g.Plane_elec$region=="Hipp"])*100) %>%
+   ungroup
+
+
+p.TI.elect_region_norm2 <- ggplot()+
+  geom_bar(data =norm, aes(x = region, y = TI_norm), stat="identity", fill=c("#3b37a3", "#de437e")) + 
+  geom_errorbar(data =norm, aes(x = region, ymin=(TI_norm-TI_SDnorm), ymax=(TI_norm+TI_SDnorm)), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+  geom_point(data = g.norm.Plane_elec_region, aes(x=region, y=TI_median_norm), size=4, alpha=0.5, position = position_jitter(width = .1, height = 0)) +
+
+       scale_y_continuous(
+                           limits=c(-10, 200)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Norm. envelope", paste("modulation amplitude (%)")))) + xlab("")
+
+
+p.HF.elect_region_norm2 <- ggplot(norm, aes(x = region, y = HF_norm)) +
+       geom_bar(stat="identity", fill=c("#3b37a3", "#de437e")) + 
+  geom_errorbar(aes(ymin=(HF_norm-HF_SDnorm), ymax=(HF_norm+HF_SDnorm)), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+   geom_point(data = g.norm.Plane_elec_region, aes(x=region, y=HF_median_norm), size=4, alpha=0.5, position = position_jitter(width = .1, height = 0)) +
+
+        scale_y_continuous(
+                           limits=c(-10, 200)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Norm. absolute", paste("amplitude (%)")))) + xlab("")
+
+ROI_norm <- grid.arrange(p.TI.elect_region_norm2, p.HF.elect_region_norm2, nrow=1, ncol=2)
+ggsave(ROI_norm, file="Figure_1g.pdf", width = 12, height = 8, dpi = 300, units = "cm", device = "pdf") 
+
+# ----------------------------------------------------------------------------------
+# Compare regions-- Table S1 
+
+g.Plane_elec_region$elect <- as.factor(g.Plane_elec_region$elect)
+
+
+TI.m <- lmer(TI_median ~ region  + (1|elect), data = g.Plane_elec_region)
+Anova(TI.m, test="F") 
+emmeans(TI.m, specs = pairwise ~ region, type = "response" )
+
+HF.m <- lmer(HF_median ~ region +  (1|elect), data = g.Plane_elec_region, REML = TRUE)
+Anova(HF.m, test="F") 
+emmeans(HF.m, specs = pairwise ~ region, type = "response" )
+
+
+
+
+
+```
+### Plot data - Figure 1h
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+## Mod ratio plot - electrode b
+Mod_ratio <- subset(Plane_elec, StimType=="TI" & elect=="b")
+
+h_line_max <- round(max(Mod_ratio$mod_ratio),2)
+h_line_min <- round(min(Mod_ratio$mod_ratio),2)
+
+p.Mod_ratio <- ggplot(Mod_ratio, aes(x=depth, y=mod_ratio)) + geom_line(color = "red", size=1.3) +
+  theme_bw() + 
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    panel.border = element_blank(), panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  scale_x_continuous(name="Depth (mm)", limits=c(10, 61)) +
+  scale_y_continuous(limits=c(0, 1)) +
+  theme(legend.position="none") + ylab(expression(atop("Envelope", paste(" modulation ratio"))))
+
+p.Mod_ratio 
+ggsave(p.Mod_ratio,file="Figure_1h.pdf", width = 7, height = 7, dpi = 300, units = "cm", device = "pdf")  
+```
+
+
+
+### Electric Field
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+
+Elec_TI <-subset(Plane_elec, StimType=="TI" & elect=="b")
+MaxElectricField <- max(Elec_TI$d1_env_amp)
+DepthMax <- Elec_TI[which.max(Elec_TI[,"d1_env_amp"]),"depth"]
+
+
+MaxElectricField_HF <- max(abs(Elec_TI$d1_env_max))
+DepthMaxHF <- Elec_TI[which.min(Elec_TI[,"d1_env_max"]),"depth"]
+
+
+p.ElecField <- ggplot(Elec_TI, aes(x=depth, y=d1_env_amp)) + 
+   geom_line(color = "red") +
+   geom_line(data=Elec_TI, aes(x=depth, y=abs(d1_env_max)), color = "black")
+
+
+```

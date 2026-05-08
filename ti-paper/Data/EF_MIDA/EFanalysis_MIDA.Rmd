@@ -1,0 +1,416 @@
+---
+title: "EF model - MIDA"
+output:
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/EF_MIDA")
+data <- read.csv("MIDA.csv")
+
+
+# Assign factors
+data$ROI <- factor(data$ROI)
+data$Region <- factor(data$Region)
+data$StimType <- factor(data$StimType)
+data$Stim <- factor(data$Stim)
+
+```
+
+## **Plot data** - Figure 1e 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+## TI Plot Cortical ROIs and Hippocampus 
+TIfields_cortex <- subset(data,  Region=="Cortex" & StimType=="TI")
+
+p.TI.field_cortex <- ggplot(TIfields_cortex, aes(x = ROI, y = Median)) +
+        geom_bar(stat="identity", fill=c("#3b37a3","#3b37a3", "#3b37a3")) + 
+  geom_errorbar(aes(ymin=Median-Std, ymax=Median+Std), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, .5)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Envelope modulation", paste("amplitude (V/m)")))) + xlab("Cortex") 
+
+
+
+## Hippocampus all
+TIfields_hipp <- subset(data,  Region=="Hippocampus"  & StimType=="TI")
+
+## Median weighted by volume
+Ant_w = (TIfields_hipp$Median[TIfields_hipp$ROI=="Ant"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Mid_w = (TIfields_hipp$Median[TIfields_hipp$ROI=="Mid"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Post_w = (TIfields_hipp$Median[TIfields_hipp$ROI=="Post"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+## STd  weighted by volume
+Ant_w_sd = (TIfields_hipp$Std[TIfields_hipp$ROI=="Ant"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Mid_w_sd = (TIfields_hipp$Std[TIfields_hipp$ROI=="Mid"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Post_w_sd = (TIfields_hipp$Std[TIfields_hipp$ROI=="Post"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Hipp_t = Ant_w + Mid_w + Post_w
+Hipp_sd = Ant_w_sd + Mid_w_sd + Post_w_sd
+Region <- "Hipp"
+Median <- Hipp_t 
+SD <- Hipp_sd
+tVolBrain = sum(TIfields_hipp$VolBrain)
+
+Thipp <- data.frame(Region, Median, SD)
+
+p.TI.field_hipp <-  ggplot(Thipp , aes(x = Region, y = Median)) + 
+  geom_bar(stat="identity", fill=c("#de437e")) +
+  geom_errorbar(aes(ymin=Median-SD, ymax=Median+SD), width=0.3, size=.6, position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, .5)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_blank(),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_blank(),
+        #axis.ticks.y=element_blank(),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") +  xlab("") + easy_remove_y_axis() + scale_x_discrete(labels = c("Hipp")) 
+  
+
+Fields_cortex_hipp <- grid.arrange(
+  arrangeGrob(p.TI.field_cortex, p.TI.field_hipp, nrow=1, ncol=2 ,widths=c(1,0.37)))
+
+
+## ----- Nomrlaise to hippocampus ----
+fields_cortex <- TIfields_cortex %>% dplyr::select(ROI, Median, Std)
+fields_cortex <- rename(fields_cortex, 
+                        Region = ROI,
+                        SD = Std)
+
+TIfields <- rbind(Thipp, fields_cortex)
+
+TIfields$Median[TIfields$Region=="Hipp"]
+
+norm <- ddply(TIfields, c("Region"), summarise,
+                     Mnorm = (Median*100)/(TIfields$Median[TIfields$Region=="Hipp"]),
+              SDnorm = (SD)/(TIfields$Median[TIfields$Region=="Hipp"])*100
+              )
+
+
+norm_cortex <- subset(norm, Region!="Hipp")
+p.TI.field_cortex_norm <- ggplot(norm_cortex, aes(x = Region, y = Mnorm)) +
+        geom_bar(stat="identity", fill=c("#3b37a3","#3b37a3", "#3b37a3")) + 
+  geom_errorbar(aes(ymin=Mnorm-SDnorm, ymax=Mnorm+SDnorm), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, 170)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Norm. envelope", paste("modulation amplitude (%)")))) + xlab("Cortex") 
+
+
+norm_hipp <- subset(norm, Region=="Hipp")
+p.TI.field_hipp_norm <-  ggplot(norm_hipp , aes(x = Region, y = Mnorm)) + 
+  geom_bar(stat="identity", fill=c("#de437e")) +
+  geom_errorbar(aes(ymin=Mnorm-SDnorm, ymax=Mnorm+SDnorm), width=0.3, size=.6, position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, 170)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_blank(),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_blank(),
+        #axis.ticks.y=element_blank(),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") +  xlab("") + easy_remove_y_axis() + scale_x_discrete(labels = c("Hipp")) 
+  
+
+Fields_cortex_hipp_norm <- grid.arrange(
+  arrangeGrob(p.TI.field_cortex_norm, p.TI.field_hipp_norm, nrow=1, ncol=2 ,widths=c(1,0.37)))
+
+
+ggsave(Fields_cortex_hipp_norm,file="Figure_1ei.eps", width = 9, height = 8, dpi = 300, units = "cm", device = "eps") 
+
+
+              
+```
+
+## Plot data - Figure 1e
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+## Absolute Amplitude
+p.HF.field_cortex <- ggplot(TIfields_cortex, aes(x = ROI, y = MedianTEf)) +
+         geom_bar(stat="identity", fill=c("#3b37a3","#3b37a3", "#3b37a3")) + 
+  geom_errorbar(aes(ymin=MedianTEf-StdTEf, ymax=MedianTEf+StdTEf), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, .5)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "plain"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + xlab("Cortex")  + ylab(expression(atop("Absolute", paste("amplitude (V/m)")))) 
+
+## Hippocampus all
+## Median  weighted by volume
+Ant_HF = (TIfields_hipp$MedianTEf[TIfields_hipp$ROI=="Ant"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Mid_HF = (TIfields_hipp$MedianTEf[TIfields_hipp$ROI=="Mid"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Post_HF = (TIfields_hipp$MedianTEf[TIfields_hipp$ROI=="Post"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+## STd  weighted by volume
+Ant_HF_sd = (TIfields_hipp$StdTEf[TIfields_hipp$ROI=="Ant"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Mid_HF_sd = (TIfields_hipp$StdTEf[TIfields_hipp$ROI=="Mid"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Post_HF_sd = (TIfields_hipp$StdTEf[TIfields_hipp$ROI=="Post"] * TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"]) / (TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Ant"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Mid"] + TIfields_hipp$VolBrain[TIfields_hipp$ROI=="Post"])
+
+Hipp_HF = Ant_HF + Mid_HF + Post_HF
+Hipp_HF_sd = Ant_HF_sd + Mid_HF_sd + Post_HF_sd
+Region <- "Hipp"
+Median <- Hipp_HF 
+SD <- Hipp_HF_sd
+
+Thipp_HF <- data.frame(Region, Median, SD)
+
+
+p.HF.field_hipp <-  ggplot(Thipp_HF , aes(x = Region, y = Median)) + 
+  geom_bar(stat="identity", fill=c("#de437e")) +
+  geom_errorbar(aes(ymin=Median-SD, ymax=Median+SD), width=0.3, size=.6, position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, .5)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_blank(),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_blank(),
+        #axis.ticks.y=element_blank(),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") +  xlab("") + easy_remove_y_axis() + scale_x_discrete(labels = c("Hipp")) 
+  
+
+Fields_cortex_hipp_HF <- grid.arrange(
+  arrangeGrob(p.HF.field_cortex, p.HF.field_hipp, nrow=1, ncol=2 ,widths=c(1,0.37)))
+
+
+## Nomrlaise to hippocampus
+HF_fields_cortex <- TIfields_cortex %>% dplyr::select(ROI, MedianTEf, StdTEf)
+HF_fields_cortex <- rename(HF_fields_cortex, 
+                           Median=MedianTEf,
+                        Region = ROI,
+                        SD = StdTEf)
+
+HF_fields <- rbind(Thipp_HF, HF_fields_cortex)
+
+HF_fields$Median[HF_fields$Region=="Hipp"]
+
+norm <- ddply(HF_fields, c("Region"), summarise,
+                     Mnorm = (Median*100)/(HF_fields$Median[HF_fields$Region=="Hipp"]),
+              SDnorm = (SD)/(HF_fields$Median[HF_fields$Region=="Hipp"])*100
+              )
+
+norm_cortex <- subset(norm, Region!="Hipp")
+p.HF.field_cortex_norm <- ggplot(norm_cortex, aes(x = Region, y = Mnorm)) +
+        geom_bar(stat="identity", fill=c("#3b37a3","#3b37a3", "#3b37a3")) + 
+  geom_errorbar(aes(ymin=Mnorm-SDnorm, ymax=Mnorm+SDnorm), width=0.3, size=.6,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, 170)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + ylab(expression(atop("Norm. absolute", paste("amplitude (%)")))) + xlab("Cortex") 
+
+
+norm_hipp <- subset(norm, Region=="Hipp")
+p.HF.field_hipp_norm <-  ggplot(norm_hipp , aes(x = Region, y = Mnorm)) + 
+  geom_bar(stat="identity", fill=c("#de437e")) +
+  geom_errorbar(aes(ymin=Mnorm-SDnorm, ymax=Mnorm+SDnorm), width=0.3, size=.6, position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, 170)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_blank(),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_blank(),
+        #axis.ticks.y=element_blank(),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") +  xlab("") + easy_remove_y_axis() + scale_x_discrete(labels = c("Hipp")) 
+  
+
+HF_Fields_cortex_hipp_norm <- grid.arrange(
+  arrangeGrob(p.HF.field_cortex_norm, p.HF.field_hipp_norm, nrow=1, ncol=2 ,widths=c(1,0.37)))
+
+
+ggsave(HF_Fields_cortex_hipp_norm,file="Figure_1eii.eps", width = 9, height = 8, dpi = 300, units = "cm", device = "eps") 
+```
+
+
+
+## Plot data - Figure 1f
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Plot fields for hippocampus
+Hipp <- subset(data, Region=="Hippocampus" & Stim=="TI")
+
+
+# --# Sum across regions -- Ant/Sum; Mid/Sum; Post/Sum
+Ratio_Total <- ddply(Hipp, c("Ratio"), summarise,
+                     Ant = Median[ROI=="Ant"] / (Median[ROI=="Ant"] + Median[ROI=="Mid"] + Median[ROI=="Post"]),
+                     Mid = Median[ROI=="Mid"] / (Median[ROI=="Ant"] + Median[ROI=="Mid"] + Median[ROI=="Post"]),
+                     Post = Median[ROI=="Post"] / (Median[ROI=="Ant"] + Median[ROI=="Mid"] + Median[ROI=="Post"])
+                     
+)
+
+Ratio_long <- tidyr::gather(Ratio_Total, Regions, metric,  Ant:Post, factor_key=TRUE)
+Ratio_long$Regions <- as.factor(Ratio_long$Regions)
+
+Ratio_long$Current_Ratio <- NA
+Ratio_long$Current_Ratio[Ratio_long$Ratio=="1"] <- "TI 1:1"
+Ratio_long$Current_Ratio[Ratio_long$Ratio=="1.5"] <- "TI 1:3"
+
+
+# Add SD to table
+SDs <- Hipp[, c("Ratio", "ROI", "Std")]
+SDs <- SDs %>% 
+  rename(Regions = ROI)
+total <- merge(Ratio_long,SDs,by=c("Ratio","Regions")) 
+
+
+
+p.ratio.field <- ggplot(total, aes(x = Regions, y = metric)) +
+        geom_bar(stat="identity") +
+        geom_bar(stat="identity", fill=c("#ce4a30", "#56B4E9", "#E69F00","#ce4a30", "#56B4E9", "#E69F00")) + 
+  geom_errorbar(aes(ymin=metric-Std, ymax=metric+Std), width=.2,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, .45)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + xlab("Hippocampus") + ylab(expression(atop("Norm. envelope", paste("modulation amplitude")))) + facet_grid(.~Current_Ratio) 
+                                                                                    
+
+## Plot Ratios in %
+
+p.ratio.field_prct <- ggplot(total, aes(x = Regions, y = metric*100)) +
+        geom_bar(stat="identity") +
+        geom_bar(stat="identity", fill=c("#ce4a30", "#56B4E9", "#E69F00","#ce4a30", "#56B4E9", "#E69F00")) + 
+  geom_errorbar(aes(ymin=(metric-Std)*100, ymax=(metric+Std)*100), width=.2,
+                 position=position_dodge(.9)) +
+        scale_y_continuous(
+                           limits=c(0, 50)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + xlab("Hippocampus") + ylab(expression(atop("Norm. envelope", paste("modulation amplitude (%)")))) + facet_grid(.~Current_Ratio) 
+p.ratio.field_prct                                              
+
+ggsave(p.ratio.field_prct, file="Figure_1f.eps", width = 9, height = 8, dpi = 300, units = "cm", device = "eps") 
+
+```

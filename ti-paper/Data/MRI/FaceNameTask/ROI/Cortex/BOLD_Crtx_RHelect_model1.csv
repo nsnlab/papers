@@ -1,0 +1,193 @@
+S_ID,ID,StimType,TaskStage,region,ROI,hemisphere,BOLD
+TIDES_P2T_S1,1,TI 1:1,Encode,RH_ant_elect,Ant,R,0
+TIDES_P2T_S1,1,TI 1:3,Encode,RH_ant_elect,Ant,R,0.06301
+TIDES_P2T_S1,1,Sham,Encode,RH_ant_elect,Ant,R,0.5223
+TIDES_P2T_S1,1,TI 1:1,Recall,RH_ant_elect,Ant,R,0
+TIDES_P2T_S1,1,TI 1:3,Recall,RH_ant_elect,Ant,R,0
+TIDES_P2T_S1,1,Sham,Recall,RH_ant_elect,Ant,R,-0.1149
+TIDES_P2T_S5,5,TI 1:1,Encode,RH_ant_elect,Ant,R,-0.196
+TIDES_P2T_S5,5,TI 1:3,Encode,RH_ant_elect,Ant,R,-0.0271
+TIDES_P2T_S5,5,Sham,Encode,RH_ant_elect,Ant,R,0.04745
+TIDES_P2T_S5,5,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.1202
+TIDES_P2T_S5,5,TI 1:3,Recall,RH_ant_elect,Ant,R,0.1207
+TIDES_P2T_S5,5,Sham,Recall,RH_ant_elect,Ant,R,-0.1378
+TIDES_P2T_S6,6,TI 1:1,Encode,RH_ant_elect,Ant,R,-0.01598
+TIDES_P2T_S6,6,TI 1:3,Encode,RH_ant_elect,Ant,R,-0.2494
+TIDES_P2T_S6,6,Sham,Encode,RH_ant_elect,Ant,R,0.3701
+TIDES_P2T_S6,6,TI 1:1,Recall,RH_ant_elect,Ant,R,0.2142
+TIDES_P2T_S6,6,TI 1:3,Recall,RH_ant_elect,Ant,R,-0.2109
+TIDES_P2T_S6,6,Sham,Recall,RH_ant_elect,Ant,R,-0.1753
+TIDES_P2T_S8,8,TI 1:1,Encode,RH_ant_elect,Ant,R,-0.08739
+TIDES_P2T_S8,8,TI 1:3,Encode,RH_ant_elect,Ant,R,-0.02055
+TIDES_P2T_S8,8,Sham,Encode,RH_ant_elect,Ant,R,-0.04188
+TIDES_P2T_S8,8,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.0786
+TIDES_P2T_S8,8,TI 1:3,Recall,RH_ant_elect,Ant,R,0.0786
+TIDES_P2T_S8,8,Sham,Recall,RH_ant_elect,Ant,R,-0.05659
+TIDES_P2T_S9,9,TI 1:1,Encode,RH_ant_elect,Ant,R,-0.3137
+TIDES_P2T_S9,9,TI 1:3,Encode,RH_ant_elect,Ant,R,-0.2153
+TIDES_P2T_S9,9,Sham,Encode,RH_ant_elect,Ant,R,0.1794
+TIDES_P2T_S9,9,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.0718
+TIDES_P2T_S9,9,TI 1:3,Recall,RH_ant_elect,Ant,R,0.0718
+TIDES_P2T_S9,9,Sham,Recall,RH_ant_elect,Ant,R,-0.4005
+TIDES_P2T_S10,10,TI 1:1,Encode,RH_ant_elect,Ant,R,-0.668
+TIDES_P2T_S10,10,TI 1:3,Encode,RH_ant_elect,Ant,R,-0.6608
+TIDES_P2T_S10,10,Sham,Encode,RH_ant_elect,Ant,R,-0.6435
+TIDES_P2T_S10,10,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.0498
+TIDES_P2T_S10,10,TI 1:3,Recall,RH_ant_elect,Ant,R,0.0498
+TIDES_P2T_S10,10,Sham,Recall,RH_ant_elect,Ant,R,0
+TIDES_P2T_S11,11,TI 1:1,Encode,RH_ant_elect,Ant,R,0.1106
+TIDES_P2T_S11,11,TI 1:3,Encode,RH_ant_elect,Ant,R,0.15
+TIDES_P2T_S11,11,Sham,Encode,RH_ant_elect,Ant,R,-0.08407
+TIDES_P2T_S11,11,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.03195
+TIDES_P2T_S11,11,TI 1:3,Recall,RH_ant_elect,Ant,R,0.04125
+TIDES_P2T_S11,11,Sham,Recall,RH_ant_elect,Ant,R,0.1737
+TIDES_P2T_S12,12,TI 1:1,Encode,RH_ant_elect,Ant,R,0.3189
+TIDES_P2T_S12,12,TI 1:3,Encode,RH_ant_elect,Ant,R,0.3057
+TIDES_P2T_S12,12,Sham,Encode,RH_ant_elect,Ant,R,0.5584
+TIDES_P2T_S12,12,TI 1:1,Recall,RH_ant_elect,Ant,R,0.003767
+TIDES_P2T_S12,12,TI 1:3,Recall,RH_ant_elect,Ant,R,-0.003767
+TIDES_P2T_S12,12,Sham,Recall,RH_ant_elect,Ant,R,-0.1895
+TIDES_P2T_S13,13,TI 1:1,Encode,RH_ant_elect,Ant,R,0.3084
+TIDES_P2T_S13,13,TI 1:3,Encode,RH_ant_elect,Ant,R,0.2786
+TIDES_P2T_S13,13,Sham,Encode,RH_ant_elect,Ant,R,0.06122
+TIDES_P2T_S13,13,TI 1:1,Recall,RH_ant_elect,Ant,R,0.004486
+TIDES_P2T_S13,13,TI 1:3,Recall,RH_ant_elect,Ant,R,-0.004486
+TIDES_P2T_S13,13,Sham,Recall,RH_ant_elect,Ant,R,0.1661
+TIDES_P2T_S14,14,TI 1:1,Encode,RH_ant_elect,Ant,R,0.2543
+TIDES_P2T_S14,14,TI 1:3,Encode,RH_ant_elect,Ant,R,-0.4383
+TIDES_P2T_S14,14,Sham,Encode,RH_ant_elect,Ant,R,0.02528
+TIDES_P2T_S14,14,TI 1:1,Recall,RH_ant_elect,Ant,R,0.5394
+TIDES_P2T_S14,14,TI 1:3,Recall,RH_ant_elect,Ant,R,-0.5394
+TIDES_P2T_S14,14,Sham,Recall,RH_ant_elect,Ant,R,0.1718
+TIDES_P2T_S15,15,TI 1:1,Encode,RH_ant_elect,Ant,R,0.05631
+TIDES_P2T_S15,15,TI 1:3,Encode,RH_ant_elect,Ant,R,0.1305
+TIDES_P2T_S15,15,Sham,Encode,RH_ant_elect,Ant,R,-0.03
+TIDES_P2T_S15,15,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.05898
+TIDES_P2T_S15,15,TI 1:3,Recall,RH_ant_elect,Ant,R,0.05997
+TIDES_P2T_S15,15,Sham,Recall,RH_ant_elect,Ant,R,0.07817
+TIDES_P2T_S18,18,TI 1:1,Encode,RH_ant_elect,Ant,R,-0.119
+TIDES_P2T_S18,18,TI 1:3,Encode,RH_ant_elect,Ant,R,0.01227
+TIDES_P2T_S18,18,Sham,Encode,RH_ant_elect,Ant,R,-0.03257
+TIDES_P2T_S18,18,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.1751
+TIDES_P2T_S18,18,TI 1:3,Recall,RH_ant_elect,Ant,R,0.1751
+TIDES_P2T_S18,18,Sham,Recall,RH_ant_elect,Ant,R,-0.1023
+TIDES_P2T_S19,19,TI 1:1,Encode,RH_ant_elect,Ant,R,0.2365
+TIDES_P2T_S19,19,TI 1:3,Encode,RH_ant_elect,Ant,R,0.2762
+TIDES_P2T_S19,19,Sham,Encode,RH_ant_elect,Ant,R,0.5036
+TIDES_P2T_S19,19,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.04969
+TIDES_P2T_S19,19,TI 1:3,Recall,RH_ant_elect,Ant,R,0.04992
+TIDES_P2T_S19,19,Sham,Recall,RH_ant_elect,Ant,R,-0.1757
+TIDES_P2T_S20,20,TI 1:1,Encode,RH_ant_elect,Ant,R,-0.382
+TIDES_P2T_S20,20,TI 1:3,Encode,RH_ant_elect,Ant,R,-0.1129
+TIDES_P2T_S20,20,Sham,Encode,RH_ant_elect,Ant,R,-0.2797
+TIDES_P2T_S20,20,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.1368
+TIDES_P2T_S20,20,TI 1:3,Recall,RH_ant_elect,Ant,R,0.1368
+TIDES_P2T_S20,20,Sham,Recall,RH_ant_elect,Ant,R,-0.1379
+TIDES_P2T_S21,21,TI 1:1,Encode,RH_ant_elect,Ant,R,0.8411
+TIDES_P2T_S21,21,TI 1:3,Encode,RH_ant_elect,Ant,R,-0.02027
+TIDES_P2T_S21,21,Sham,Encode,RH_ant_elect,Ant,R,-0.07592
+TIDES_P2T_S21,21,TI 1:1,Recall,RH_ant_elect,Ant,R,0.5764
+TIDES_P2T_S21,21,TI 1:3,Recall,RH_ant_elect,Ant,R,-0.5764
+TIDES_P2T_S21,21,Sham,Recall,RH_ant_elect,Ant,R,0.5984
+TIDES_P2T_S22,22,TI 1:1,Encode,RH_ant_elect,Ant,R,0.05313
+TIDES_P2T_S22,22,TI 1:3,Encode,RH_ant_elect,Ant,R,0.03768
+TIDES_P2T_S22,22,Sham,Encode,RH_ant_elect,Ant,R,0.06097
+TIDES_P2T_S22,22,TI 1:1,Recall,RH_ant_elect,Ant,R,-0.004629
+TIDES_P2T_S22,22,TI 1:3,Recall,RH_ant_elect,Ant,R,0.004629
+TIDES_P2T_S22,22,Sham,Recall,RH_ant_elect,Ant,R,0
+TIDES_P2T_S1,1,TI 1:1,Encode,RH_post_elect,Post,R,2.178
+TIDES_P2T_S1,1,TI 1:3,Encode,RH_post_elect,Post,R,1.624
+TIDES_P2T_S1,1,Sham,Encode,RH_post_elect,Post,R,2.188
+TIDES_P2T_S1,1,TI 1:1,Recall,RH_post_elect,Post,R,0.4128
+TIDES_P2T_S1,1,TI 1:3,Recall,RH_post_elect,Post,R,-0.4113
+TIDES_P2T_S1,1,Sham,Recall,RH_post_elect,Post,R,0.03782
+TIDES_P2T_S5,5,TI 1:1,Encode,RH_post_elect,Post,R,0.3456
+TIDES_P2T_S5,5,TI 1:3,Encode,RH_post_elect,Post,R,0.6741
+TIDES_P2T_S5,5,Sham,Encode,RH_post_elect,Post,R,0.26
+TIDES_P2T_S5,5,TI 1:1,Recall,RH_post_elect,Post,R,-0.1504
+TIDES_P2T_S5,5,TI 1:3,Recall,RH_post_elect,Post,R,0.1504
+TIDES_P2T_S5,5,Sham,Recall,RH_post_elect,Post,R,0.0663
+TIDES_P2T_S6,6,TI 1:1,Encode,RH_post_elect,Post,R,-0.01327
+TIDES_P2T_S6,6,TI 1:3,Encode,RH_post_elect,Post,R,-0.1013
+TIDES_P2T_S6,6,Sham,Encode,RH_post_elect,Post,R,-0.1001
+TIDES_P2T_S6,6,TI 1:1,Recall,RH_post_elect,Post,R,0.08683
+TIDES_P2T_S6,6,TI 1:3,Recall,RH_post_elect,Post,R,-0.08646
+TIDES_P2T_S6,6,Sham,Recall,RH_post_elect,Post,R,0.07916
+TIDES_P2T_S8,8,TI 1:1,Encode,RH_post_elect,Post,R,1.72
+TIDES_P2T_S8,8,TI 1:3,Encode,RH_post_elect,Post,R,1.255
+TIDES_P2T_S8,8,Sham,Encode,RH_post_elect,Post,R,1.543
+TIDES_P2T_S8,8,TI 1:1,Recall,RH_post_elect,Post,R,0.2823
+TIDES_P2T_S8,8,TI 1:3,Recall,RH_post_elect,Post,R,-0.2815
+TIDES_P2T_S8,8,Sham,Recall,RH_post_elect,Post,R,0.01993
+TIDES_P2T_S9,9,TI 1:1,Encode,RH_post_elect,Post,R,0.1479
+TIDES_P2T_S9,9,TI 1:3,Encode,RH_post_elect,Post,R,0.2266
+TIDES_P2T_S9,9,Sham,Encode,RH_post_elect,Post,R,0.2259
+TIDES_P2T_S9,9,TI 1:1,Recall,RH_post_elect,Post,R,-0.07748
+TIDES_P2T_S9,9,TI 1:3,Recall,RH_post_elect,Post,R,0.08265
+TIDES_P2T_S9,9,Sham,Recall,RH_post_elect,Post,R,-0.07107
+TIDES_P2T_S10,10,TI 1:1,Encode,RH_post_elect,Post,R,0.9992
+TIDES_P2T_S10,10,TI 1:3,Encode,RH_post_elect,Post,R,0.9033
+TIDES_P2T_S10,10,Sham,Encode,RH_post_elect,Post,R,1.011
+TIDES_P2T_S10,10,TI 1:1,Recall,RH_post_elect,Post,R,0.07218
+TIDES_P2T_S10,10,TI 1:3,Recall,RH_post_elect,Post,R,-0.07218
+TIDES_P2T_S10,10,Sham,Recall,RH_post_elect,Post,R,-0.1239
+TIDES_P2T_S11,11,TI 1:1,Encode,RH_post_elect,Post,R,0.1557
+TIDES_P2T_S11,11,TI 1:3,Encode,RH_post_elect,Post,R,0.3812
+TIDES_P2T_S11,11,Sham,Encode,RH_post_elect,Post,R,0.16
+TIDES_P2T_S11,11,TI 1:1,Recall,RH_post_elect,Post,R,-0.2088
+TIDES_P2T_S11,11,TI 1:3,Recall,RH_post_elect,Post,R,0.2088
+TIDES_P2T_S11,11,Sham,Recall,RH_post_elect,Post,R,-0.05369
+TIDES_P2T_S12,12,TI 1:1,Encode,RH_post_elect,Post,R,-0.1707
+TIDES_P2T_S12,12,TI 1:3,Encode,RH_post_elect,Post,R,-0.3307
+TIDES_P2T_S12,12,Sham,Encode,RH_post_elect,Post,R,0.06961
+TIDES_P2T_S12,12,TI 1:1,Recall,RH_post_elect,Post,R,0.1329
+TIDES_P2T_S12,12,TI 1:3,Recall,RH_post_elect,Post,R,-0.131
+TIDES_P2T_S12,12,Sham,Recall,RH_post_elect,Post,R,-0.1935
+TIDES_P2T_S13,13,TI 1:1,Encode,RH_post_elect,Post,R,0.0189
+TIDES_P2T_S13,13,TI 1:3,Encode,RH_post_elect,Post,R,0.03196
+TIDES_P2T_S13,13,Sham,Encode,RH_post_elect,Post,R,-0.02375
+TIDES_P2T_S13,13,TI 1:1,Recall,RH_post_elect,Post,R,0.01233
+TIDES_P2T_S13,13,TI 1:3,Recall,RH_post_elect,Post,R,-0.012
+TIDES_P2T_S13,13,Sham,Recall,RH_post_elect,Post,R,-0.005726
+TIDES_P2T_S14,14,TI 1:1,Encode,RH_post_elect,Post,R,0.0404
+TIDES_P2T_S14,14,TI 1:3,Encode,RH_post_elect,Post,R,-0.03257
+TIDES_P2T_S14,14,Sham,Encode,RH_post_elect,Post,R,0.173
+TIDES_P2T_S14,14,TI 1:1,Recall,RH_post_elect,Post,R,0.05822
+TIDES_P2T_S14,14,TI 1:3,Recall,RH_post_elect,Post,R,-0.05822
+TIDES_P2T_S14,14,Sham,Recall,RH_post_elect,Post,R,-0.1035
+TIDES_P2T_S15,15,TI 1:1,Encode,RH_post_elect,Post,R,-0.4945
+TIDES_P2T_S15,15,TI 1:3,Encode,RH_post_elect,Post,R,-0.3285
+TIDES_P2T_S15,15,Sham,Encode,RH_post_elect,Post,R,-0.3506
+TIDES_P2T_S15,15,TI 1:1,Recall,RH_post_elect,Post,R,-0.08587
+TIDES_P2T_S15,15,TI 1:3,Recall,RH_post_elect,Post,R,0.09115
+TIDES_P2T_S15,15,Sham,Recall,RH_post_elect,Post,R,-0.07406
+TIDES_P2T_S18,18,TI 1:1,Encode,RH_post_elect,Post,R,0.07131
+TIDES_P2T_S18,18,TI 1:3,Encode,RH_post_elect,Post,R,0.1463
+TIDES_P2T_S18,18,Sham,Encode,RH_post_elect,Post,R,-0.08874
+TIDES_P2T_S18,18,TI 1:1,Recall,RH_post_elect,Post,R,-0.08252
+TIDES_P2T_S18,18,TI 1:3,Recall,RH_post_elect,Post,R,0.08252
+TIDES_P2T_S18,18,Sham,Recall,RH_post_elect,Post,R,0.1424
+TIDES_P2T_S19,19,TI 1:1,Encode,RH_post_elect,Post,R,0.01026
+TIDES_P2T_S19,19,TI 1:3,Encode,RH_post_elect,Post,R,0.1429
+TIDES_P2T_S19,19,Sham,Encode,RH_post_elect,Post,R,-0.04929
+TIDES_P2T_S19,19,TI 1:1,Recall,RH_post_elect,Post,R,-0.05631
+TIDES_P2T_S19,19,TI 1:3,Recall,RH_post_elect,Post,R,0.05631
+TIDES_P2T_S19,19,Sham,Recall,RH_post_elect,Post,R,0.05334
+TIDES_P2T_S20,20,TI 1:1,Encode,RH_post_elect,Post,R,0.2104
+TIDES_P2T_S20,20,TI 1:3,Encode,RH_post_elect,Post,R,0.04397
+TIDES_P2T_S20,20,Sham,Encode,RH_post_elect,Post,R,0.1295
+TIDES_P2T_S20,20,TI 1:1,Recall,RH_post_elect,Post,R,0.07564
+TIDES_P2T_S20,20,TI 1:3,Recall,RH_post_elect,Post,R,-0.07564
+TIDES_P2T_S20,20,Sham,Recall,RH_post_elect,Post,R,0.02782
+TIDES_P2T_S21,21,TI 1:1,Encode,RH_post_elect,Post,R,1.283
+TIDES_P2T_S21,21,TI 1:3,Encode,RH_post_elect,Post,R,0.9252
+TIDES_P2T_S21,21,Sham,Encode,RH_post_elect,Post,R,0.7004
+TIDES_P2T_S21,21,TI 1:1,Recall,RH_post_elect,Post,R,0.1457
+TIDES_P2T_S21,21,TI 1:3,Recall,RH_post_elect,Post,R,-0.1457
+TIDES_P2T_S21,21,Sham,Recall,RH_post_elect,Post,R,0.2238
+TIDES_P2T_S22,22,TI 1:1,Encode,RH_post_elect,Post,R,0.2961
+TIDES_P2T_S22,22,TI 1:3,Encode,RH_post_elect,Post,R,0.1742
+TIDES_P2T_S22,22,Sham,Encode,RH_post_elect,Post,R,0.2599
+TIDES_P2T_S22,22,TI 1:1,Recall,RH_post_elect,Post,R,0.06889
+TIDES_P2T_S22,22,TI 1:3,Recall,RH_post_elect,Post,R,-0.06847
+TIDES_P2T_S22,22,Sham,Recall,RH_post_elect,Post,R,-0.004539

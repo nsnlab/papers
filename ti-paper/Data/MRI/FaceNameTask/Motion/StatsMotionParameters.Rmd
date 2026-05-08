@@ -1,0 +1,118 @@
+---
+title: "Motion Parameters"
+output:
+  pdf_document: default
+  html_document:
+    
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+### Data
+The notebook includes data from:
+
+  1. Motion parameters (DVARS) derived from running fsl_motion_outliers for all subjects 
+  2. Additional motion parameters derived from extracting DVARS and sDVARS (from https://github.com/nicholst/StandardizedDVARS/blob/master/DVARS.sh)
+
+### Libraries
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/Motion")
+motion <- read.csv("MotionData.csv")
+
+```
+
+### Check for Outliers 
+```{r}
+# Calculate outlier percentage
+Percent_outlier <- (motion$outliers / motion$nvols)*100
+motion <- cbind(motion, Percent_outlier)
+
+Outlier <-  ifelse(motion$Percent_outlier >20,1,0)  
+motion <- cbind(motion, Outlier)
+rm(Outlier)
+
+# Subjects to exclude from analysis
+ID_outliers <- subset(motion, Outlier==1)
+unique(ID_outliers$S_ID)
+```
+
+### Import data with motion metrics per stimulation condition - This was done using the script ExtractMotionPerCondition.m
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+MotionCond <- read_csv("MotionPerCond.csv")
+
+# Assign factors
+# TI 1:1, TI 1:3 and Sham are during encoding; resp = response period across conditions
+
+MotionCond$metric <- factor(MotionCond$metric)
+MotionCond$StimType <- factor(MotionCond$StimType)
+
+# Based on previous identification of outliers excluding TIDES_P2T_S4	
+MotionCond <- subset(MotionCond, S_ID!="TIDES_P2T_S4")
+```
+
+### Calculate mean values for reporting
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+MotionCond %>% 
+  group_by(StimType,metric) %>% 
+  summarise(average = mean(meanMotion), std = sd(meanMotion))
+
+```
+
+### Calculate DVARS per Stim Condition
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Compare DVARS across stim conditions
+# Excluding resp period for now - could be compared later to each condition or the average of stim conditions (?), also excluding mean_all
+FN.Motion.DVARS <- subset(MotionCond, metric=="DVARS" & StimType!="resp" & StimType!="mean_all")
+
+DVARSfit <- lmer(meanMotion ~ StimType + (1|S_ID), data = FN.Motion.DVARS)
+Anova(DVARSfit, test="F")
+summary(DVARSfit, ddf ="Kenward-Roger")
+
+
+estimated_means <- get_means(DVARSfit, "StimType")
+pander(estimated_means)
+
+boxplot_DVARS <- ggplot(FN.Motion.DVARS, aes(x=StimType, y=meanMotion, fill=StimType)) + 
+  geom_boxplot() + 
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5)
+boxplot_DVARS + scale_fill_brewer(palette="Blues") + ggtitle("DVARS (fsl_motion_outliers) per condition") +
+  xlab("Stimulation Type") + ylab("DVARS (fsl)")
+
+```
+
+### Calculate sDVARS per Stim Condition
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Compare sDVARS across stim conditions
+# Excluding resp period for now - could be compared later to each condition or the average of stim conditions (?), also excluding mean_all
+FN.Motion.sDVARS <- subset(MotionCond, metric=="sDVARS" & StimType!="resp" & StimType!="mean_all")
+
+sDVARSfit <- lmer(meanMotion ~ StimType + (1|S_ID), data = FN.Motion.sDVARS)
+anova.m1 = anova(DVARSfit)
+print(anova.m1)
+
+pander(anova.m1)
+
+estimated_means <- get_means(sDVARSfit, "StimType")
+pander(estimated_means)
+
+boxplot_sDVARS <- ggplot(FN.Motion.sDVARS, aes(x=StimType, y=meanMotion, fill=StimType)) + 
+  geom_boxplot() + 
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5)
+boxplot_sDVARS + scale_fill_brewer(palette="Blues") + ggtitle("standardise DVARS per condition") +
+  xlab("Stimulation Type") + ylab("sDVARS")
+```

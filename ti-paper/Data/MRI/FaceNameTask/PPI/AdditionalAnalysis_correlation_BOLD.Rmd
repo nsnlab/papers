@@ -1,0 +1,136 @@
+---
+title: "BOLD - PPI correlation analyses"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+  pdf_document: default
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data from BOLD amplitude Model 1
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Hippocampus")
+BOLD <- read.csv("BOLD_Hipp_model1.csv")
+
+# Assign factors
+BOLD$S_ID <- factor(BOLD$S_ID)
+BOLD$ID <- factor(BOLD$ID)
+BOLD$ROI <- factor(BOLD$ROI)
+BOLD$hemisphere <- factor(BOLD$hemisphere)
+BOLD$StimType <- factor(BOLD$StimType)
+BOLD$TaskStage <- factor(BOLD$TaskStage)
+
+# select variables/conditions of interest
+BOLD_m1 <- subset(BOLD, TaskStage=="Encode" & ROI!="Hippocampus" & hemisphere=="L")
+BOLD_m1 <- subset(BOLD_m1 , select = -c(hemisphere))
+
+# change ROI variable to seed to later combine with PPI in the same dataframe
+BOLD_m1 <- BOLD_m1 %>% 
+  rename(
+    seed = ROI)
+
+```
+
+### Import data PPI
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/PPI")
+PPI <- read.csv("PPI.csv")
+
+# Assign factors
+PPI$S_ID <- factor(PPI$S_ID)
+PPI$ID <- factor(PPI$ID)
+PPI$StimType <- factor(PPI$StimType)
+PPI$TaskStage <- factor(PPI$TaskStage)
+PPI$network <- factor(PPI$network)
+PPI$seed <- factor(PPI$seed)
+PPI$target <- factor(PPI$target)
+
+PPI <- subset(PPI, TaskStage=="Encode" & network=="AT")
+
+# Average all targets from AT
+PPI_AT <- ddply(PPI, c("S_ID","ID","StimType","seed","TaskStage"), summarise,
+                conn = mean(mcon))
+```
+
+### Perform Correlations
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Combine dataframes
+all <- merge(BOLD_m1,PPI_AT,by=c("S_ID","ID","StimType", "TaskStage","seed")) 
+
+library(data.table)
+# Correlations - are the changes in BOLD amplitude and connectivity correlated? 
+corr1 <- ddply(all, .(StimType, seed), corrgroup, "BOLD", "conn")
+pander(corr1)
+
+# Plot
+sp <- ggscatter(all, x = "conn", y = "BOLD",
+   add = "reg.line",  # Add regressin line
+   add.params = list(color = "black", fill = "lightgray"), # Customize reg. line
+   conf.int = TRUE # Add confidence interval
+   ) + stat_cor(method = "pearson") + facet_grid(seed~StimType)
+sp
+
+```
+
+### Import data from BOLD amplitude Model 2
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Hippocampus")
+BOLD <- read.csv("BOLD_Hipp_model2.csv")
+
+# Assign factors
+BOLD$S_ID <- factor(BOLD$S_ID)
+BOLD$ID <- factor(BOLD$ID)
+BOLD$ROI <- factor(BOLD$ROI)
+BOLD$hemisphere <- factor(BOLD$hemisphere)
+BOLD$StimType <- factor(BOLD$StimType)
+BOLD$TaskStage <- factor(BOLD$TaskStage)
+BOLD$Response <- factor(BOLD$Response)
+
+# select variables/conditions of interest
+BOLD_m2 <- subset(BOLD, TaskStage=="Encode" & ROI!="Hippocampus" & hemisphere=="L" & Response=="C>I")
+BOLD_m2 <- subset(BOLD_m2 , select = -c(hemisphere, Response))
+
+# change ROI variable to seed to later combine with PPI in the same dataframe
+BOLD_m2 <- BOLD_m2 %>% 
+  rename(
+    seed = ROI)
+```
+
+### Perform Correlations
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Combine dataframes
+all2 <- merge(BOLD_m2,PPI_AT,by=c("S_ID","ID","StimType", "TaskStage","seed")) 
+
+
+# Correlations - are the changes in BOLD amplitude and connectivity correlated? 
+corr2 <- ddply(all2, .(StimType, seed), corrgroup, "BOLD", "conn")
+pander(corr2)
+
+# perform correction for multiple comparisons
+ost_FDR(corr2)
+
+# Plot
+sp2 <- ggscatter(all2, x = "conn", y = "BOLD",
+   add = "reg.line",  # Add regressin line
+   add.params = list(color = "black", fill = "lightgray"), # Customize reg. line
+   conf.int = TRUE # Add confidence interval
+   ) + stat_cor(method = "pearson") + facet_grid(seed~StimType)
+
+sp2
+```
+

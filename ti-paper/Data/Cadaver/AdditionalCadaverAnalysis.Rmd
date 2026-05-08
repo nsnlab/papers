@@ -1,0 +1,94 @@
+---
+title: "Data analysis - Cadaver Measurements Current Ratios"
+output:
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+
+
+## Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear envirnonment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data and Organize it
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Cadaver/")
+data <- read.csv("RatioElectrodeData.csv")
+
+
+# add cortical (contacts 15 - 9) and hipp (contacts 8 - 1) regions 
+data$contact <- as.numeric(data$contact)
+data$region[data$contact>8] <- "Cortex"
+data$region[data$contact<9] <- "Hipp"
+
+# Assign factors
+data$elect <- factor(data$elect)
+data$type <- factor(data$type)
+data$region <- factor(data$region)
+data$location <- factor(data$location)
+
+# Extract only "hippocampal" electrodes
+Hipp <- subset(data, region=="Hipp")
+
+```
+
+
+### Calculate and Plot Ratios between Ant and Post electrode, Figure 1i
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(wesanderson)
+library(dplyr)
+TI.hipp <- Hipp %>%
+   group_by(type) %>% 
+   mutate(mean_norm = env_amp / mean(env_amp[location == "Post"])*100,
+          median_norm = env_amp / median(env_amp[location == "Post"])*100) %>%
+   ungroup
+
+Ant.Post.norm <- subset(TI.hipp, location=="Ant")
+
+Ant.Post.norm.gr <- ddply(Ant.Post.norm, c("location","type"), summarise,
+                          median_env = mean(median_norm),
+                   mean_env = mean(mean_norm),
+                   sd_env = sd(mean_norm),
+                   se_env = se(mean_norm))
+
+
+Ant.Post.ratio <- ggplot() + 
+  geom_bar(data = Ant.Post.norm.gr, aes(x=type, y=median_env), stat="identity", fill = "#7a7878") +
+  geom_errorbar(data = Ant.Post.norm.gr, aes(x=type, ymin=(median_env-sd_env), ymax=(median_env+sd_env), width=0.2)) +
+  geom_point(data = Ant.Post.norm, aes(x=type, y=mean_norm, color=contact), size=4, alpha=0.7) + scale_color_gradientn(trans = "reverse", colors = wes_palette("Zissou1", type = "continuous")) +
+  scale_y_continuous(limits=c(0, 150)) +
+  scale_x_discrete(labels=c("TI 1:1", "TI 1:3")) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 45, hjust=0.9, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x =  element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),
+        legend.background = element_blank(),
+        legend.title=element_text(color = "grey20", size = 12, angle = 0, face = "plain"), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14)) + ylab(expression(atop("Envelope modulation amplitude", paste("Ant/Post Hipp (%)")))) + xlab("")
+
+Ant.Post.ratio
+ggsave(Ant.Post.ratio,file="Figure_1i.pdf", width = 7, height = 9, dpi = 300, units = "cm", device = "pdf")  
+
+
+t.test(mean_norm~type, data = Ant.Post.norm, paired=TRUE)
+t.test(median_norm~type, data = Ant.Post.norm, paired=TRUE)
+
+```

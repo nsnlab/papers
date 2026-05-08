@@ -1,0 +1,209 @@
+---
+title: "Blinding Effectiveness"
+output:
+  pdf_document: default
+  html_document:
+    
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear envirnonment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+### Import data and add labels
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Import data
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/BehaviourStudy/Blinding")
+data_raw <- read_csv("StimGuessDataLong.csv")
+
+# Assign appropriate Stim factors
+data_raw$S_ID <- data_raw$SubjectNumber
+data_raw$StimType <- data_raw$Stimulation
+data_raw$StimType <- factor(data_raw$StimType)
+levels(data_raw$StimType) <- c("Sham", "TI 1:3")
+
+# Assign factors
+data_raw$StimType <- factor(data_raw$StimType)
+data_raw$S_ID <- factor(data_raw$S_ID)
+data_raw$Session <- factor(data_raw$Session)
+
+```
+
+### Plot data 
+```{r fig.width=12}
+
+g_data <- ddply(data_raw, c("StimType","timePoint2"), summarise,
+         mean = mean(WeightedScore),
+         median = median(WeightedScore),
+         sd = sd(WeightedScore),
+         se = se(WeightedScore)
+)
+
+ggplot(g_data, aes(x=timePoint2, y=median, group=StimType, color=StimType)) + 
+    geom_errorbar(aes(ymin=median-sd, ymax=median+sd), width=.1) +
+    geom_line() + geom_point()+
+   scale_color_brewer(palette="Paired")+theme_minimal() 
+
+```
+
+#### **Bootstrapping** 
+```{r message=TRUE, paged.print=TRUE}
+
+bdata <- data_raw
+
+# Create matrix split by StimType and time Point
+sp <- split(bdata, list(bdata$StimType, bdata$timePoint2))
+
+# Set seed for reproducibility
+set.seed(1)
+
+# Define Functions
+boot.median = function(data,index){
+  d = data[index,]  
+  return(median(d$WeightedScore))  
+}
+
+
+# kernelboot package to calculate median and 95 CI
+# this uses a smooth bootstrap technique
+library(kernelboot)
+
+ysb <- lapply(sp, function(x){
+  #browser()
+  # Median - summary gives the mean of the median
+  bootobject.median.g <- kernelboot(x, boot.median, R = 10000, kernel = "gaussian", bw =1)
+  median_gau <- median(bootobject.median.g$boot.samples)
+
+  s_gau = bootobject.median.g$boot.samples
+  
+  data.frame(median_gau, summary(bootobject.median.g))
+  
+})
+
+## Plot with different kernels
+smboot <- do.call(rbind, ysb)
+smboot$StimType <- c("Sham", "TI 1:3", "Sham", "TI 1:3", "Sham", "TI 1:3", "Sham", "TI 1:3")
+smboot$time <- c("1", "1", "2", "2", "3", "3", "4", "4")
+
+p.median.gau <- ggplot(smboot, aes(x=time, y=`mean`, group=StimType)) +
+  geom_line(aes(linetype=StimType))+
+  geom_point(aes(shape=StimType)) +
+  geom_ribbon(aes(time, ymin = `X2.5.`, ymax = `X97.5.`, fill = StimType), alpha = .2) +
+  ylim(-10, 10) +  theme_classic() + scale_color_manual(values = c("#999999", "##fc0707")) +
+  scale_fill_manual(values = c("#999999","#fc0707")) +
+  xlab("") + ylab(expression(atop("Median Weighted", paste("Response")))) + theme(legend.title = element_blank(), legend.position="bottom",
+                                                            axis.title = element_text(size = 14),
+                                                            axis.text = element_text(size = 12), legend.text = element_text(size = 12)) + scale_x_discrete(labels=c("1" = "Q1", "2" = "Q2", "3" = "Q3", "4" = "Q4"))
+
+p.median.gau
+
+
+## Plot Gaussian different style
+p.median.gau2 <- ggplot(data = smboot, mapping=aes(x=time, y=`mean`, ymin=`X2.5.`, ymax = `X97.5.`, group = StimType)) +
+  geom_pointrange(size=0.9, alpha=0.8, position = position_dodge(width = 0.4), 
+                  color= c("#747674", "#D16103", "#747674", "#D16103", "#747674", "#D16103", "#747674", "#D16103")) +
+  ylim(-10, 10) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold", hjust = 1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+  theme(strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 20)) + 
+   theme(legend.title = element_blank(), legend.position="bottom",
+                                                            axis.title = element_text(size = 14),
+                                                            axis.text = element_text(size = 12), legend.text = element_text(size = 12)) + scale_x_discrete(labels=c("1" = "Q1", "2" = "Q2", "3" = "Q3", "4" = "Q4")) + xlab("") + ylab(expression(bold(atop("Median Weighted", paste("Response")))) )
+
+p.median.gau2
+
+ggsave(p.median.gau2, filename =  "Figure_5G.pdf", width = 9, height = 7, dpi = 300, units = "cm", device = "pdf")
+
+```
+
+#### **LME** 
+```{r message=TRUE, paged.print=TRUE}
+
+bdata <- data_raw
+xtabs( ~ WeightedScore + StimType + timePoint2, bdata)
+
+# Not balanced - subject 1 only had measurements from Sham 
+
+m0 <- lmer(WeightedScore ~ StimType*factor(timePoint2) + (1|S_ID), data=bdata)
+m1 <- lmer(WeightedScore ~ StimType*factor(timePoint2) + (1|S_ID) + (1|Session), control=lmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5)), data=bdata)
+
+
+anova(m0, m1)
+lmtest:::lrtest(m0, m1)
+# keeping m1
+
+Anova(m1)
+
+plot_model(m1)
+plot_model(m1, type = "pred")
+
+
+wilcox.test(subset(bdata, StimType=="Sham" & S_ID!="1")$WeightedScore, subset(bdata, StimType=="TI 1:3" & S_ID!="1")$WeightedScore, paired=TRUE) 
+
+
+
+bdata$stimGuessRating  <- factor(bdata$stimGuessRating, 
+                           ordered=TRUE)
+
+library(ordinal)
+library(RVAideMemoire)
+
+m3 = clmm(stimGuessRating ~ StimType*as.factor(timePoint2) + (1|S_ID), data = bdata, Hess = TRUE)
+Anova.clmm (m3)
+
+emmeans(m3, specs = pairwise ~ StimType | timePoint2, type = "response")
+
+plot_model(m3)
+
+```
+
+#### **Post-Stimulation Questionnaire** 
+```{r message=TRUE, paged.print=TRUE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/BehaviourStudy/Blinding")
+post_stim <- read_csv("PostStimQ.csv")
+
+
+# Assign factors
+post_stim$StimType <- factor(post_stim$StimType)
+post_stim$S_ID <- factor(post_stim$S_ID)
+
+# Perform Wilcoxon signed-rank tests
+    
+adv <- colnames(post_stim)
+adv <- adv[-c(1:2)]
+
+library(coin)
+library(rstatix)
+lapply(post_stim[,adv], function(x) coin::wilcox_test(x ~ post_stim$StimType, paired = TRUE))
+
+data_long <- gather(post_stim, side_effect, rating, adv_itching:adv_visual, factor_key=TRUE)
+
+
+### Means to report
+stat <-  data_long  %>%
+  group_by(StimType, side_effect) %>%
+  summarise_at(vars(rating), list(mean = mean, std = sd, min = min, max = max))
+
+pander(stat)
+
+```

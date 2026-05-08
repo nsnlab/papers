@@ -1,0 +1,119 @@
+---
+title: "BOLD - behaviour correlations"
+output:
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data from BOLD amplitude Model 1
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Hippocampus")
+BOLD <- read.csv("BOLD_Hipp_model1.csv")
+
+# Assign factors
+BOLD$S_ID <- factor(BOLD$S_ID)
+BOLD$ID <- factor(BOLD$ID)
+BOLD$ROI <- factor(BOLD$ROI)
+BOLD$hemisphere <- factor(BOLD$hemisphere)
+BOLD$StimType <- factor(BOLD$StimType)
+BOLD$TaskStage <- factor(BOLD$TaskStage)
+
+# select variables/conditions of interest
+BOLD_m1 <- subset(BOLD, TaskStage=="Encode" & hemisphere=="L")
+BOLD_m1 <- subset(BOLD_m1 , select = -c(hemisphere))
+```
+
+### Import data from BOLD amplitude Model 2
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Hippocampus")
+BOLD <- read.csv("BOLD_Hipp_model2.csv")
+
+# Assign factors
+BOLD$S_ID <- factor(BOLD$S_ID)
+BOLD$ID <- factor(BOLD$ID)
+BOLD$ROI <- factor(BOLD$ROI)
+BOLD$hemisphere <- factor(BOLD$hemisphere)
+BOLD$StimType <- factor(BOLD$StimType)
+BOLD$TaskStage <- factor(BOLD$TaskStage)
+BOLD$Response <- factor(BOLD$Response)
+
+# select variables/conditions of interest
+BOLD_m2 <- subset(BOLD, TaskStage=="Encode" & hemisphere=="L" & Response=="C>I")
+BOLD_m2 <- subset(BOLD_m2 , select = -c(hemisphere))
+```
+
+### Import data from Behaviour during fMRI
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/Behaviour")
+load("Avg_Behv.Rda")
+
+bev <- bev %>% 
+  rename(
+    ID = S_ID)
+
+bev_acc <- subset(bev, RespType=="Target") 
+
+
+```
+
+### Perform Correlations
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Combine dataframes
+library(data.table)
+B1_beh <- merge(BOLD_m1,bev_acc,by=c("ID","StimType")) 
+
+# Correlations - between BOLD signal model 1 and behavioural performance
+corr1 <- ddply(B1_beh, .(StimType, ROI, RespType), corrgroup, "BOLD", "mean")
+pander(corr1)
+# no dignificant correlations
+
+
+# -------------------------------------------------------
+# Correlations - between BOLD signal model 2 and behavioural performance
+
+B2_beh <- merge(BOLD_m2,bev_acc,by=c("ID","StimType"))
+corr2 <- ddply(B2_beh, .(StimType, ROI, RespType), corrgroup, "BOLD", "mean")
+pander(corr2)
+# no dignificant correlations
+
+```
+
+### Correlations between BOLD signal in encode and recall
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Hippocampus")
+BOLD <- read.csv("BOLD_Hipp_model2.csv")
+
+# Assign factors
+BOLD$S_ID <- factor(BOLD$S_ID)
+BOLD$ID <- factor(BOLD$ID)
+BOLD$ROI <- factor(BOLD$ROI)
+BOLD$hemisphere <- factor(BOLD$hemisphere)
+BOLD$StimType <- factor(BOLD$StimType)
+BOLD$TaskStage <- factor(BOLD$TaskStage)
+BOLD$Response <- factor(BOLD$Response)
+
+# select variables/conditions of interest
+BOLD_m2 <- subset(BOLD,  hemisphere=="L" & Response=="C>I")
+BOLD_m2 <- subset(BOLD_m2 , select = -c(hemisphere))
+
+BOLD_m2_wide <- spread(BOLD_m2, TaskStage, BOLD)
+
+corr2 <- ddply(BOLD_m2_wide, .(StimType, ROI), corrgroup, "Encode", "Recall")
+pander(corr2)
+```

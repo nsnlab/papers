@@ -1,0 +1,100 @@
+---
+title: "ROI Analyses Electrodes (spheres) - Model 1 (Encode & Recall)"
+output:
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/ROI/Cortex")
+ROIdata <- read.csv("BOLD_Crtx_RHelect_model1.csv")
+
+# Assign factors
+ROIdata$S_ID <- factor(ROIdata$S_ID)
+ROIdata$ID <- factor(ROIdata$ID)
+ROIdata$ROI <- factor(ROIdata$ROI)
+ROIdata$hemisphere <- factor(ROIdata$hemisphere)
+ROIdata$StimType <- factor(ROIdata$StimType)
+ROIdata$TaskStage <- factor(ROIdata$TaskStage)
+
+```
+
+### **Sham Condition -  Crtx spheres** 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# One sample t-test - Sham Encode, Right hemisphere electrodes - Table SXX
+
+# BOLD = median % BOLD signal
+
+Sham_enc <- subset(ROIdata, StimType=="Sham" & TaskStage=="Encode" )
+type = "greater"
+Sham_ost <- ddply(Sham_enc, .(TaskStage, ROI), t.test.plyr, "BOLD")
+Sham_ost <- ost_FDR(Sham_ost)
+pander(Sham_ost)
+
+```
+
+### **Stim Conditions - Crtx spheres** - Figure X
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Does stimulation impact BOLD activity during encode vs recall stages of the task in the regions underneath and between the electrodes in the right hemisphere?
+
+
+Crtx <- subset(ROIdata, hemisphere=="R")
+xtabs(~ TaskStage + hemisphere + StimType + ROI, Crtx)
+
+BA <- lmer(BOLD ~ StimType*ROI*TaskStage + (1|S_ID), data = Crtx, REML = TRUE) 
+Anova(BA, test="F") 
+summary(BA, ddf ="Kenward-Roger")
+
+estimated_means <- get_means(BA, "TaskStage*StimType*ROI")
+pander(estimated_means)
+
+emmip(BA, StimType ~ ROI|TaskStage)
+
+
+# Plot
+p.BA.Crtx <- ggplot(Crtx, aes(x = ROI, y = BOLD, fill = StimType)) +
+       stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) + 
+        scale_y_continuous(name = "BOLD (% signal change)",
+                           breaks = seq(-1, 2, .6),
+                           limits=c(-1.2, 2.2)) +
+        theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 45, face = "bold", hjust=1),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_text(color="black", size=14, face="plain"),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) + 
+        scale_x_discrete(breaks=c("Ant","Mid","Post"),
+        labels=c("Crtx Ant","Crtx Mid","Crtx Post")) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+     theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20),
+          legend.text = element_text(size=14),
+          legend.key.size = unit(0.5, 'cm')) + ggtitle("") + xlab("Cortex") + scale_fill_manual(values = c("#747674", "#56B4E9", "#D16103"), name = "", labels = c("Sham", "TI 1:1", "TI 1:3"))  + facet_grid(.~TaskStage)
+
+ggsave(p.BA.Crtx,file="Figure_RH_elect.tiff", width = 12, height = 9, dpi = 300, units = "cm", device = "tiff")
+p.BA.Crtx
+
+```

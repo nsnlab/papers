@@ -1,0 +1,57 @@
+---
+title: "EF model - MIDA TI ratios"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+  pdf_document: default
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/EF_MIDA")
+data <- read.csv("NormalisedRatiosHippocampus.csv")
+
+# Convert to long format
+library(tidyr)
+ratios <- gather(data, region, env_amp_norm, Ant:Post, factor_key=TRUE)
+
+ratios$Ratio = factor(ratios$Ratio, levels=c("TI 1:10","TI 1:5","TI 1:3","TI 1:1", "TI 5:1", "TI 10:1"))
+
+
+p.ratio.field <- ggplot(ratios, aes(x = region, y = env_amp_norm, fill=region)) +
+        geom_bar(stat="identity", fill=c("#ce4a30", "#56B4E9", "#E69F00", "#ce4a30", "#56B4E9", "#E69F00", "#ce4a30", "#56B4E9", "#E69F00",
+                                         "#ce4a30", "#56B4E9", "#E69F00", "#ce4a30", "#56B4E9", "#E69F00", "#ce4a30", "#56B4E9", "#E69F00")) + 
+        scale_y_continuous(
+                           limits=c(0, 50)) +
+  theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+        axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 12, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+        legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        legend.title=element_blank(), 
+        panel.background = element_blank()) +
+        theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 14), legend.position = "none") + xlab("Hippocampus") + ylab(expression(atop("Norm. envelope", paste("modulation amplitude (%)")))) + facet_grid(.~Ratio) 
+
+ggsave(p.ratio.field, file="HippocampusNormalisedPercRatios.tiff", width = 24, height = 8, dpi = 300, units = "cm", device = "tiff") 
+
+```

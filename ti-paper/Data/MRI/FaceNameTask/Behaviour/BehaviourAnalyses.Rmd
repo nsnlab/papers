@@ -1,0 +1,560 @@
+---
+title: "Face Name Task Behaviour fMRI"
+output:
+  html_document:
+    
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+  pdf_document: default
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear envirnonment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data and add labels
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Import data
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/Behaviour")
+data_raw <- read_csv("Behaviour.csv")
+
+# Exclude participant 4 - too much movement in the MRI
+data_raw <- subset(data_raw, S_ID!=4)
+
+# Assign appropriate Stim factors
+data_raw$StimType <- factor(data_raw$StimType)
+levels(data_raw$StimType) <- c("Sham", "TI 1:1", "TI 1:3")
+
+# Assign factors
+data_raw$StimType <- factor(data_raw$StimType)
+data_raw$block <- factor(data_raw$block)
+data_raw$S_ID <- factor(data_raw$S_ID)
+
+```
+
+### Check data for outliers - Accuracy level
+```{r fig.width=12}
+g_data <- ddply(data_raw, c("S_ID"), summarise,
+         N = sum(!is.na(trial)),
+         mean_Acc_prct = (sum(Accuracy, na.rm=TRUE)/N)*100
+)
+
+
+pander(g_data)
+# All subjects have mean accuracy above 20% (chance level)
+
+ggplot(g_data, aes(x=S_ID, y=mean_Acc_prct)) + 
+    geom_bar(position=position_dodge(), stat="identity") 
+
+
+g_data %>% summarise(mean = mean(mean_Acc_prct),
+            sd = sd(mean_Acc_prct), min = min(mean_Acc_prct), max = max(mean_Acc_prct))
+```
+
+### Check response distributions
+```{r}
+## What is the distribution of responses (correct, foil, distractors, omission)
+bdata <-  data_raw
+bdata$RespType <- ifelse(bdata$Accuracy==1, "Target", 
+       ifelse(bdata$Foil==1, "Foil", 
+              ifelse(bdata$Distractor==1, "Distractor", NA)))
+
+# ------- Checking number of cases (percent) -------------
+
+pander(bdata %>% 
+    group_by(RespType) %>% 
+    summarise(percent = 100 * n() / nrow(bdata)))
+
+# Participants select Correct > Foil > Distractor. They are engaging with the task appropriately. NA = omission
+
+bdata <- bdata[!is.na(bdata$RespType),]  # Getting rid of the few omissions in the dataset
+bdata$RespType <- factor(bdata$RespType,levels = c("Target", "Foil", "Distractor"))
+```
+
+### Check the distribution of RTs and clean the data if needed
+```{r}
+# ---- Plot histogram of RT  --------
+ggplot(bdata, aes(x=RT)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white")+
+ geom_density(alpha=.2, fill="#FF6666") 
+
+# Typicall histogram distribution, left skew, right tail
+
+
+# ----- Check 1 and 99% percentiles and remove those from the data ----------
+rts <-  bdata$RT
+qts <- quantile(rts, probs = c(.01, .99)) 
+qts
+
+
+bdata <- bdata %>% mutate(RT = replace(RT, RT<qts[1], NA))
+bdata <- bdata %>% mutate(RT = replace(RT, RT>qts[2], NA))
+bdata <- bdata[!is.na(bdata$RT),] 
+
+```
+
+### Add additional variables of interest
+
+```{r}
+CorrectRT <-  ifelse(bdata$Accuracy==1, bdata$RT, NA); 
+IncorrectRT <- ifelse(bdata$Accuracy==0, bdata$RT, NA); 
+CorrectConfidence <- ifelse(bdata$Accuracy==1, bdata$Confidence, NA); 
+IncorrectConfidence <- ifelse(bdata$Accuracy==0, bdata$Confidence, NA); 
+
+bdata <- cbind(bdata, CorrectRT, IncorrectRT, CorrectConfidence, IncorrectConfidence)
+rm(CorrectRT,IncorrectRT,CorrectConfidence,IncorrectConfidence)
+```
+
+
+#### **Accuracy **
+```{r message=TRUE, paged.print=TRUE}
+
+xtabs( ~ RespType + StimType, bdata)
+ggplot(bdata, aes(x=RespType)) + geom_bar(aes(fill=StimType),position="stack") + 
+ ggtitle("Responses per type across stimulation conditions")
+
+
+
+
+# Does the number of responses per response type vary for different stimulation conditions
+bdata$RespType <- relevel(bdata$RespType, ref = "Target")
+m.acc <- nnet::multinom(RespType ~ StimType, data = bdata)
+summary(m.acc)
+exp(coef(m.acc))
+
+
+# Check the Z-score for the model (wald Z)
+z <- summary(m.acc)$coefficients/summary(m.acc)$standard.errors
+z
+p <- (1 - pnorm(abs(z), 0, 1))*2
+p
+
+Anova(m.acc)
+emmeans(m.acc, specs = pairwise ~ StimType|RespType, type = "response")
+
+# No. there is an effect of foil and distractor, but not of stimulation
+
+
+#----- binomial ----------
+m1 <- glmer(Accuracy ~ StimType + (1|S_ID) , data=bdata, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5)))
+
+m2<- glmer(Accuracy ~ StimType + (1|S_ID) + (1|block), data=bdata, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5)))
+
+m3 <- glmer(Accuracy ~ StimType + (1|S_ID) + (1|block/trial), data=bdata, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5)))
+
+anova(m1, m2, m3)
+lmtest:::lrtest(m1, m2, m3)
+# keeping m2
+
+Anova(m2)
+emmeans(m2, specs = pairwise ~ StimType, type = "response" )
+
+summary(m2)
+
+library(DHARMa)
+testDispersion(m2)
+simulationOutput <- simulateResiduals(fittedModel = m2, plot = T)
+
+
+# Checking results on averaged data  for completeness
+# --------- lmer - group data ------------
+
+g_bdata <- ddply(bdata, c("S_ID","StimType", "RespType"), summarise,
+                  N = sum(!is.na(trial)),
+                  meanRespType = N/48, #because there are 48 trials per stimType per participant
+                  meanRespTypePerc = meanRespType*100,
+                  medianRT = median(RT, na.rm=TRUE),
+                  mean_Conf = mean(Confidence, na.rm=TRUE)
+)
+
+g_bdata <- g_bdata[!is.na(g_bdata$RespType),]  # Getting rid of the few omissions in the dataset
+g_bdata$RespType <- factor(g_bdata$RespType,levels = c("Target", "Foil", "Distractor"))
+
+Resptype.acc <- lmer(meanRespType ~ StimType*RespType + (1|S_ID), data = g_bdata, REML = TRUE)
+Anova(Resptype.acc, test="F")
+summary(Resptype.acc, ddf ="Kenward-Roger")
+
+
+### Means to report 
+ g_bdata  %>%
+  group_by(RespType) %>%
+  summarise_at(vars(meanRespType), list(mean = mean, std = sd, SE = se))
+
+
+ g_bdata  %>%
+  group_by(StimType, RespType) %>%
+  summarise_at(vars(meanRespType), list(mean = mean, std = sd))
+
+ 
+### Means per participant
+
+g_bdata2 <- ddply(bdata, c("S_ID","StimType", "Accuracy"), summarise,
+                  N = sum(!is.na(trial)),
+                  meanRespType = N/48, #because there are 48 trials per stimType per participant
+                  meanRespTypePerc = meanRespType*100,
+                  medianRT = median(RT, na.rm=TRUE),
+                  mean_Conf = mean(Confidence, na.rm=TRUE)
+)
+
+CorrectTrials <- subset(g_bdata2, Accuracy==1)
+
+CorrectTrial <- CorrectTrials %>% 
+  tibble::as_tibble() %>% 
+  group_by(StimType) %>%
+  mutate(avg_meanRespTypePerc = mean(meanRespTypePerc)) %>%
+  mutate(demeaned_meanRespTypePerc = meanRespTypePerc - avg_meanRespTypePerc)
+
+
+# Is accuracy above chance (chance is 0.2)?
+type = "greater"
+mean=0.2
+Acc_ost <- ddply(CorrectTrial, .(StimType), t.test_acc.plyr, "meanRespType")
+ost_FDR(Acc_ost)
+
+```
+
+#### **Reaction Times **
+```{r message=TRUE, paged.print=TRUE}
+# plotting the data
+library(ggridges)
+ggplot(bdata, aes(x = RT, fill = RespType)) +
+                    geom_histogram(bins = 30) +
+                    facet_grid(StimType ~ RespType)
+
+# Does reaction time per response type vary for different stimulation conditions?
+
+# Using glm without random effects to find starting values for the optimisation
+m0 <- glm(RT ~ StimType*RespType, data=bdata, family = inverse.gaussian(link=identity))
+
+m1 <- glmer(RT ~ StimType*RespType +  (1|S_ID),
+            data = bdata,
+            family = inverse.gaussian(link=identity),
+            start=list(fixef=coef(m0)),
+            control=glmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5), nAGQ0initStep=FALSE))
+
+m2 <- glmer(RT ~ StimType*RespType +  (1|S_ID) + (1|block),
+            data = bdata,
+            family = inverse.gaussian(link=identity),
+            start=list(fixef=coef(m0)),
+            control=glmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5), nAGQ0initStep=FALSE))
+
+
+m3 <- glmer(RT ~ StimType*RespType +  (1|S_ID) + (1|block/trial),
+            data = bdata,
+            family = inverse.gaussian(link=identity),
+            start=list(fixef=coef(m0)),
+            control=glmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5), nAGQ0initStep=FALSE))
+
+
+anova(m1, m2, m3)
+lmtest:::lrtest(m1, m2, m3)
+
+
+# keeping m2
+plot(m2)
+qqnorm(resid(m2))
+qqline(resid(m2))
+
+Anova(m2)
+emmeans(m2, specs = pairwise ~ StimType|RespType, type = "response" )
+
+
+
+# -- Does reaction time for correct vs incorrect vary for different stimulation conditions
+m0 <- glm(RT ~ StimType*as.factor(Accuracy), data=bdata, family = inverse.gaussian(link=identity))
+
+m2 <- glmer(RT ~ StimType*as.factor(Accuracy) +  (1|S_ID) + (1|block),
+            data = bdata,
+            family = inverse.gaussian(link=identity),
+            start=list(fixef=coef(m0)),
+            control=glmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5), nAGQ0initStep=FALSE))
+
+plot(m2)
+qqnorm(resid(m2))
+qqline(resid(m2))
+
+Anova(m2)
+emmeans(m2, specs = pairwise ~ StimType|Accuracy, type = "response" )
+
+
+#estimated_means <- get_means(m2, "StimType*Accuracy")
+#pander(estimated_means)
+
+
+pander(bdata %>% 
+    group_by(Accuracy) %>% 
+    summarise(mean(RT), sd(RT)))
+
+
+# Checking results on averaged data  for completeness
+
+Resptype.rt <- lmer(medianRT ~ StimType*RespType + (1|S_ID), data = g_bdata, REML = TRUE)
+Anova(Resptype.rt, test="F")
+summary(Resptype.rt, ddf ="Kenward-Roger")
+
+#estimated_means <- get_means(Resptype.rt, "StimType*RespType")
+#pander(estimated_means)
+
+# Save data
+save(g_bdata, bdata, file = "BehaviouralData_clean.RData")
+
+
+### Means to report
+ g_bdata  %>%
+  group_by(StimType, RespType) %>%
+  summarise_at(vars(medianRT), list(mean = mean, std = sd))
+
+
+```
+
+#### **Confidence **
+```{r message=TRUE, paged.print=TRUE}
+
+xtabs( ~ Confidence + RespType + StimType , bdata)
+# Removing confidence = 0 > no response or technical error
+sum(bdata$Confidence=="0")
+
+Confidence_omission_Prct <- (sum(data_raw$Confidence=="0")/length(data_raw$Confidence))*100
+
+bdata <- bdata %>% mutate(Confidence = replace(Confidence, Confidence=="0", NA))
+bdata <- bdata[!is.na(bdata$Confidence),] 
+bdata$Confidence <- as.factor(bdata$Confidence)
+
+ggplot(data = bdata) + 
+  geom_bar(mapping = aes(x = Confidence, fill = RespType)) + facet_wrap(.~StimType)
+
+# Does the accuracy per response type vary for different stimulation conditions
+library(ordinal)
+library(ggeffects)
+m1 = clmm(Confidence ~ StimType*RespType + (1|S_ID), data = bdata, Hess = TRUE)
+m2 = clmm(Confidence ~ StimType*RespType + (1|S_ID) + (1|block), data = bdata, Hess = TRUE)
+anova(m1,m2)
+
+library(RVAideMemoire)
+Anova.clmm(m2)
+#emmeans(m2, specs = pairwise ~ StimType|RespType, type = "response" )
+emmeans(m2, specs = pairwise ~ StimType|RespType,  mode = "mean.class" )
+
+# getting the estimated means for Stimulation type
+emmeans(m2, ~  StimType, mode = "mean.class")
+
+
+
+
+
+
+# Also looking at the average confidence levels for completeness
+ 
+Resptype.conf <- lmer(mean_Conf ~ StimType*RespType + (1|S_ID), data = g_bdata, REML = TRUE)
+Anova(Resptype.conf, test="F")
+summary(Resptype.conf, ddf ="Kenward-Roger")
+
+#estimated_means <- get_means(Resptype.conf, "StimType*RespType")
+#pander(estimated_means)
+
+#estimated_means <- get_means(Resptype.conf, "StimType")
+#pander(estimated_means)
+
+### Means to report
+ g_bdata  %>%
+  group_by(StimType, RespType) %>%
+  summarise_at(vars(mean_Conf), list(mean = mean, std = sd))
+
+
+```
+
+
+#### **Plots ** - Figure 2D 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+cbPalette <- c("#E69F00", "#D55E00","#CC79A7", "#999999")
+
+levels(bdata$StimType)[levels(bdata$StimType)=="Sham"] <- "Sham"
+levels(bdata$StimType)[levels(bdata$StimType)=="TI 1:1"] <- "TI 1:1"
+levels(bdata$StimType)[levels(bdata$StimType)=="TI 1:3"] <- "TI 1:3"
+
+library(scales)
+# Plot response type 
+
+
+bdata$Confidence <- as.numeric(bdata$Confidence)
+
+g_bdata <- ddply(bdata, c("S_ID","StimType", "RespType"), summarise,
+                  N = sum(!is.na(trial)),
+                  meanRespType = N/48, #because there are 48 trials per stimType per participant
+                  meanRespTypePerc = meanRespType*100,
+                  medianRT = median(RT, na.rm=TRUE),
+                  mean_Conf = mean(Confidence, na.rm=TRUE)
+)
+
+
+p.RespType <- ggplot(g_bdata, aes(x = RespType, y = meanRespTypePerc, fill = StimType))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "Mean Response (%)",
+                           breaks = seq(0, 100, 20),
+                           limits=c(0, 100)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+            legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) +
+   scale_x_discrete(breaks=c("Target","Foil", "Distractor"),
+        labels=c("Target","Foil", "Distractor")) +
+         theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20),
+          legend.text = element_text(size=14),
+          legend.key.size = unit(0.5, 'cm')) + ggtitle("") + xlab("")  + scale_fill_manual(values = c("#747674", "#56B4E9", "#D16103"), name = "", labels = c("Sham", "TI 1:1", "TI 1:3"))
+
+#ggsave(p.RespType ,file="Figure_2C.pdf", width = 12, height = 9, dpi = 300, units = "cm", device = "pdf")  
+
+# alternative
+p.RespType.alt <- ggplot(bdata, aes(x = StimType, 
+                  fill = factor(RespType, levels = c("Target", "Foil", "Distractor")))) + 
+  geom_bar(position = "fill") +
+  scale_y_continuous(breaks = seq(0, 1, .2), 
+                     label = percent) +
+  scale_fill_manual(values = cbPalette) +
+  labs(y = "Percent", fill = "Response",
+       x = "Stimulation",
+       title = "") +
+  theme_minimal() + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14),
+                          legend.text = element_text(size = 12), 
+                          legend.title = element_blank(),
+                          axis.title.x = element_blank(),
+                          axis.text.x.top = element_text(size = 14, face = "bold", color = "black"),
+                          panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + 
+  scale_x_discrete(position = "top") + ylab("Response")
+
+
+
+
+### Plot RT
+
+p.RespType.RT <- ggplot(g_bdata, aes(x = RespType, y = medianRT, fill = StimType))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "Median RT (s)",
+                           breaks = seq(0, 12, 2),
+                           limits=c(0, 12)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+            legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) +
+   scale_x_discrete(breaks=c("Target","Foil", "Distractor"),
+        labels=c("Target","Foil", "Distractor")) +
+         theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20),
+          legend.text = element_text(size=14),
+          legend.key.size = unit(0.5, 'cm')) + ggtitle("") + xlab("")  + scale_fill_manual(values = c("#747674", "#56B4E9", "#D16103"), name = "", labels = c("Sham", "TI 1:1", "TI 1:3"))
+
+
+# Plot RT distribution
+library(ggridges)
+
+bdata$RespType <- factor(bdata$RespType, levels = c("Distractor", "Foil", "Target"), ordered = TRUE)
+
+p.RT <- ggplot(bdata, aes(x = RT, y = StimType, fill = RespType)) +
+  geom_density_ridges(scale = 0.8, alpha = 0.6) +
+  theme_ridges(grid = FALSE, center_axis_labels = TRUE) + 
+  scale_fill_manual(values=c("#E69F00", "#D55E00", "#CC79A7"),
+                       name="Response",
+                       breaks=c("Target", "Foil", "Distractor"),
+                       labels=c("Target", "Foil", "Distractor")) +
+ theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 14, face = "bold"),
+       legend.title = element_blank()) + 
+  scale_x_continuous(name = "Reaction Time (s)") + scale_y_discrete(expand = c(0, 0.2))
+
+
+
+# Plot confidence
+
+level_order <- factor(g_bdata$RespType, levels = c("Target", "Foil", "Distractor"))
+
+p.RespType.Conf <- ggplot(g_bdata, aes(x =level_order, y = mean_Conf, fill = StimType))  + 
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(width = 0.9)) +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = position_dodge(0.9), size = 0.6, width = 0.3, colour="black") + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.9), stackratio=1, dotsize=0.15) +
+  scale_y_continuous(name = "Mean Confidence",
+                           breaks = seq(0, 4, 1),
+                           limits=c(0, 4)) +
+      theme(plot.title = element_text(color="black", size=14, face="bold", hjust = 0.5),
+          axis.text.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 14, angle = 0, face = "bold"),
+        axis.title.y = element_text(color = "grey20", size = 14, angle = 90, face = "bold"),
+            legend.text = element_blank(),
+        legend.background = element_blank(),
+        legend.key=element_blank(),
+        panel.background = element_blank(),
+        legend.title=element_blank()) +
+   scale_x_discrete(breaks=c("Target","Foil", "Distractor"),
+        labels=c("Target","Foil", "Distractor")) +
+         theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+    theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20),
+          legend.text = element_text(size=14),
+          legend.key.size = unit(0.5, 'cm')) + ggtitle("") + xlab("")  + scale_fill_manual(values = c("#747674", "#56B4E9", "#D16103"), name = "", labels = c("Sham", "TI 1:1", "TI 1:3"))
+
+
+# Alternative
+p.Confidence <- ggplot(bdata, aes(x = factor(RespType, 
+                         levels = c("Target", "Foil", "Distractor")),
+                  fill = factor(Confidence, levels = c("4", "3", "2", "1")))) + 
+  geom_bar(position = "fill") +
+  scale_y_continuous(breaks = seq(0, 1, .2), 
+                     label = percent) + 
+  scale_fill_manual(values = cbPalette)  +
+  labs(y = "Percent", fill = "Confidence",
+       x = "",
+       title = "") +
+  theme_minimal() + theme(text = element_text(size = 14), 
+                          axis.text = element_text(size = 12), 
+                          axis.title = element_text(size = 14),
+                          legend.text = element_text(size = 12), 
+                          legend.title = element_blank(),
+                          axis.title.x = element_blank(),
+                          axis.text.x.top = element_text(size = 14, face = "bold"),
+                          axis.text.x = element_text(angle = 45, hjust = 1),
+                          panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+                          panel.background = element_blank()) + ylab("Confidence") + facet_grid(~StimType) + theme(strip.text.x = element_text(size = 14, face="bold"))
+
+
+
+p.RespType.alt
+p.RT
+p.Confidence
+
+p.RespType
+p.RespType.RT
+p.RespType.Conf
+# Combine Plots
+p.Behav <- grid.arrange(p.RespType, p.RespType.RT, p.RespType.Conf, nrow = 1, ncol=3, widths = c(1,1,1))
+ggsave(p.Behav, filename = "Figure_2C.pdf", width = 30, height = 10, dpi = 300, units = "cm", device = "pdf")
+
+
+```

@@ -1,0 +1,74 @@
+---
+title: "tSNR in ROIs"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+  pdf_document: default
+---
+
+### Libraries and Functions
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Clear environment
+rm(list = ls())
+
+# Get Libraries and Functions
+source("~/Dropbox (Personal)/TI_paper/ti-paper/Data/Functions.R")
+
+```
+
+
+### Import data 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+setwd("~/Dropbox (Personal)/TI_paper/ti-paper/Data/MRI/FaceNameTask/tSNR/")
+ROIdata <- read.csv("tSNR.csv")
+
+# Assign factors
+ROIdata$S_ID <- factor(ROIdata$S_ID)
+ROIdata$ID <- factor(ROIdata$ID)
+ROIdata$ROI <- factor(ROIdata$ROI)
+ROIdata$hemisphere <- factor(ROIdata$hemisphere)
+
+```
+
+### Stats and plot
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+tSNR.m <- lmer(tSNR ~ hemisphere + (1|S_ID) + (1|ROI), data = ROIdata,REML = TRUE)
+Anova(tSNR.m, test="F") 
+summary(tSNR.m, ddf ="Kenward-Roger")
+tSNR.contrasts <- emmeans(tSNR.m, specs = pairwise ~ hemisphere, type = "response")
+tSNR.contrasts
+
+p.tSNR.cortical <- ggplot(ROIdata, aes(x = hemisphere, y = tSNR, fill = hemisphere)) +
+        geom_boxplot(alpha=1, outlier.shape = NA, notch = TRUE, position=position_dodge(0.8)) +
+        scale_y_continuous(name = "tSNR",
+                           breaks = seq(50, 300, 50),
+                           limits=c(50, 300)) +
+        scale_x_discrete(name = "Hemisphere") +
+        theme(plot.title = element_blank(),
+              axis.title.x = element_text(size = 14, family = "Arial", face = "bold"),
+              axis.title.y = element_text(color="black", size=16, face="bold"),
+              axis.text.x=element_text(color="black", size=16, face="bold"),
+              axis.text.y = element_text(size = 14),
+              legend.background = element_blank(),
+              legend.key=element_blank(),
+              panel.background = element_blank(),
+              legend.title=element_blank()) + 
+             scale_colour_manual(values=c("#39cc4d", "#42ecf5"))+
+        scale_fill_manual(values=c("#39cc4d", "#42ecf5"),
+                           name = "Hemisphere", 
+                           breaks = c("L", "R"),
+                           labels = c("LH", "RH")) + 
+              theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + 
+        theme(strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size = 20), legend.position = "none") + ggtitle("") 
+
+       
+p.tSNR.cortical
+ggsave(p.tSNR.cortical, filename = "tSNR_cortex.tiff", width = 7, height = 9, dpi = 300, units = "cm", device = "tiff")
+
+```
